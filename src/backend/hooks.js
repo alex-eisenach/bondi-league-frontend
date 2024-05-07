@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:5038";
+//const API_URL = "http://localhost:5038";
+const API_URL = "https://golf-league-scoretracker-backend.onrender.com";
 
 export async function postNewGolfer(_data) {
     const urlPost = API_URL + '/posts/newGolfer';

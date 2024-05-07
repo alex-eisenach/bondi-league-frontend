@@ -64,9 +64,8 @@ const NewWeek = () => {
                 postNewGolfer({Names : row.name.toUpperCase()}).then((d) => {console.log('Response: ', d)});
             }
         };
+        
         // Add the new week via aggregate pipeline
-        const newDate = [`${data.year} Wk ${data.week}`];
-
         for (const row of data.rows) {
             postUpdate(row)
             .then((d) => {
@@ -264,7 +263,6 @@ const NewWeek = () => {
                             )}
                             options={golferNames}
                             value={data.name}
-                            //style={{color: colors.greenAccent[400], fontSize: 16}}
                             selectOnFocus={false}
                             clearOnBlur
                             autoHighlight
