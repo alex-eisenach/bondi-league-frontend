@@ -1,4 +1,4 @@
-import {Box, TextField, Autocomplete, useTheme, Button, IconButton} from '@mui/material';
+import {Box, TextField, Autocomplete, useTheme, Button, IconButton, Select, InputLabel, FormControl, MenuItem} from '@mui/material';
 import {useState, useEffect, useRef, useMemo} from 'react';
 import {tokens} from "../theme";
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -269,6 +269,7 @@ const NewWeek = () => {
                             autoComplete
                             blurOnSelect
                             freeSolo
+                            disabled={data.week && data.year ? false : true}
                             onInputChange={(_, value, __) => {
                                 changeGolfer(value)
                             }}
@@ -286,30 +287,35 @@ const NewWeek = () => {
                         >
                         </Autocomplete>
 
-                        <Autocomplete
-                            renderInput={(params) => (
-                                <TextField {...params} sx={{input: {textAlign: 'center'}}} label='Gross Score'/>
-                            )}
-                            options={[...Array(40).keys()].map(i => (i + 20).toString())}
-                            value={data.score}
-                            selectOnFocus={false}
-                            autoHighlight
-                            autoComplete
-                            blurOnSelect
-                            onChange={(_, value, __) => changeScore(value)}
-                            sx={
-                                {
-                                    input: {
-                                        textAlign: 'center'
-                                    },
-                                    "& .MuiFormLabel-root": {
-                                        color: colors.greenAccent[400]
-                                    },
-                                    width: 250
-                                }
-                            }
+                        <FormControl
+                        sx = {{ ml: 5}}
                         >
-                        </Autocomplete>
+                        <InputLabel
+                            style={{color: colors.greenAccent[400], fontSize: 16}}
+                        >
+                            Score
+                        </InputLabel>
+
+                        <Select
+                            value={data.score}
+                            placeholder='score'
+                            onChange={e => {setData({...data, ['score']: e.target.value})}}
+                            name='score'
+                            sx={{
+                                textAlign: 'center',
+                                width: 250 
+                            }}
+                            label='Score'
+                            blurOnSelect
+                            disabled={data.week && data.year ? false : true}
+                        >
+                            {[...Array(40).keys()].map((v, i) => {
+                                const val = (i+20).toString();
+                                return <MenuItem key={i} value={val}>{val}</MenuItem>
+                            })
+                            }
+                        </Select>
+                    </FormControl>
 
                     </Box>
 
@@ -327,6 +333,7 @@ const NewWeek = () => {
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleOnClick}
+                            disabled={data.week && data.year && data.name && data.score ? false : true}
                         >
                             Add
                         </Button>

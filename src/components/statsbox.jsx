@@ -12,8 +12,9 @@ const StatBox = ({ title, subtitle, statColor=null }) => {
                 display='flex'
                 flexDirection='column'
                 justifyContent='space-evenly'
-                width='200px'
-                minHeight='85px'
+                //width='200px'
+                //minHeight='85px'
+                padding='10px'
                 m='0 10px'
                 sx = {
                     {
