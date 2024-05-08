@@ -1,12 +1,11 @@
 import './App.css';
 
 import {useState}                   from 'react';
-import {getAllData}                 from "./data/data";
 import {ColorModeContext, useMode}  from "./theme";
 import {CssBaseline, ThemeProvider} from '@mui/material';
 import {Routes, Route}              from "react-router-dom";
 
-import Topbar      from './scenes/global/topbar';
+//import Topbar      from './scenes/global/topbar';
 import Sidebar     from './scenes/global/sidebar';
 import Dashboard   from './scenes/dashboard';
 import Scorestable from './scenes/scorestable';

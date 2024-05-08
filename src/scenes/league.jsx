@@ -1,12 +1,13 @@
-import {Box, TextField, useTheme, Autocomplete} from '@mui/material';
-import {mean} from 'mathjs';
-import {useState, useEffect, useRef, useLayoutEffect} from 'react';
-import Header from "../components/header";
-import {tokens} from "../theme";
-import {getAllData, weeksForYear, yearsForWeek,getFlightsForDate} from "../data/data";
+import { Box, MenuItem, useTheme, Typography } from '@mui/material';
+import { DataGrid } from "@mui/x-data-grid";
 import * as Plot from '@observablehq/plot';
+import { mean } from 'mathjs';
+import { useEffect, useRef, useState } from 'react';
+import Header from "../components/header";
+import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import {DataGrid} from "@mui/x-data-grid";
+import { getAllData, getFlightsForDate, weeksForYear } from "../data/data";
+import { tokens } from "../theme";
 
 const League = (props) => {
 
@@ -181,40 +182,39 @@ const League = (props) => {
                 justifyContent='center'
                 display='flex'
             >
-                <Autocomplete
-                    renderInput={(params) =>
-                        <TextField {...params} sx={{input: {textAlign: 'center'}}} />}
-                    //options={(data.allData.length) ? yearsForWeek(data.allData, data.week) : [data.year]}
-                    options={data.allYears}
+                <AppSelect
+                    label='Year'
+                    placeholder='year'
+                    name='year'
+                    onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
                     value={data.year}
-                    style={{color: colors.greenAccent[400], fontSize: 16}}
-                    selectOnFocus={false}
-                    autoHighlight
-                    autoComplete
-                    blurOnSelect
-                    onChange={(_, value, __) => changeYear(value)}
                     sx = {{
                         width: 200
                     }}
-                >
-                </Autocomplete>
+                    valuesFunc={
+                        data.allYears.map((y, i) => {
+                            return <MenuItem key={i} value={y}>{y}</MenuItem>
+                        })
+                    }
+                />
 
-                <Autocomplete
-                    renderInput={(params) =>
-                        <TextField {...params} sx={{input: {textAlign: 'center'}}} />}
-                    options={(data.allData.length) ? weeksForYear(data.allData, data.year) : [data.week]}
+                <AppSelect
+                    label='Week'
+                    placeholder='week'
+                    name='week'
+                    onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
                     value={yearChangeCallback()}
-                    //style={{color: colors.greenAccent[400], fontSize: 16}}
-                    selectOnFocus={false}
-                    autoHighlight
-                    autoComplete
-                    blurOnSelect
-                    onChange={(_, value, __) => changeWeek(value)}
                     sx = {{
                         width: 200
                     }}
-                >
-                </Autocomplete>
+                    valuesFunc={
+                        (data.allData.length)
+                            ? weeksForYear(data.allData, data.year).map((y, i) => {
+                                return <MenuItem key={i} value={y}>{y}</MenuItem>
+                            }) 
+                            : [<MenuItem key={0} value={data.week}>{data.week}</MenuItem>]
+                    }
+                />
             </Box>
 
             <Box
@@ -245,6 +245,46 @@ const League = (props) => {
                 <Box
                     display='flex'
                     flexDirection='row'
+                    justifyContent='space-around'
+                    mt='20px'
+                >
+                    <Typography
+                        variant='h2'
+                        fontWeight='bold'
+                        padding='10px'
+                        sx = {
+                            {
+                                border: 1,
+                                borderColor: colors.greenAccent[400],
+                                borderRadius: '5%'
+                            }
+                        }
+                        //sx = {{ color: colors.greenAccent[400] }}
+                    >
+                        A Flight
+                    </Typography>
+
+                    <Typography
+                        variant='h2'
+                        fontWeight='bold'
+                        padding='10px'
+                        sx = {
+                            {
+                                border: 1,
+                                borderColor: colors.greenAccent[400],
+                                borderRadius: '5%'
+                            }
+                        }
+                        //sx = {{ color: colors.greenAccent[400] }}
+                    >
+                        B Flight
+                    </Typography>
+                </Box>
+
+                <Box
+                    display='flex'
+                    flexDirection='row'
+                    mt='10px'
                 >
                     <DataGrid
                         columns={columns()}

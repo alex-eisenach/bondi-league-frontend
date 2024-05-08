@@ -14,7 +14,7 @@ const StatBox = ({ title, subtitle, statColor=null }) => {
                 justifyContent='space-evenly'
                 //width='200px'
                 //minHeight='85px'
-                padding='10px'
+                padding='10px   '
                 m='0 10px'
                 sx = {
                     {

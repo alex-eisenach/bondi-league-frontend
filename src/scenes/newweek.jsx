@@ -1,28 +1,20 @@
-import {Box, TextField, Autocomplete, useTheme, Button, IconButton, Select, InputLabel, FormControl, MenuItem} from '@mui/material';
-import {useState, useEffect, useRef, useMemo} from 'react';
-import {tokens} from "../theme";
-import useMediaQuery from '@mui/material/useMediaQuery';
-import * as yup from 'yup';
-import Header from '../components/header';
-import {getAllData, weeksForYear} from "../data/data";
-import {postNewGolfer, postNewWeek, postUpdate, postRemoveWeek} from '../backend/hooks';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {DataGrid} from "@mui/x-data-grid";
-
-const scoreSchema = yup.object().shape({
-    score: yup.number().required('required')
-});
-
-const initialValues = {
-    score: ''
-}
+import { Autocomplete, Box, Button, IconButton, MenuItem, TextField, useTheme } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { DataGrid } from "@mui/x-data-grid";
+import { useEffect, useMemo, useState } from 'react';
+import { postNewGolfer, postRemoveWeek, postUpdate } from '../backend/hooks';
+import Header from '../components/header';
+import AppSelect from '../components/select';
+import { getAllData, weeksForYear } from "../data/data";
+import { tokens } from "../theme";
 
 const NewWeek = () => {
+
     const isNonMobile = useMediaQuery('(min-width:600px)');
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const action = useRef(null);
 
     const [data, setData] = useState({
         week:        '',
@@ -39,9 +31,6 @@ const NewWeek = () => {
         allData:     []
     }); 
 
-    const changeWeek   = week   => {setData({...data, 'week'  : week})}
-    const changeYear   = year   => {setData({...data, 'year'  : year})}
-    const changeScore  = score  => {setData({...data, 'score' : score})}
     const changeGolfer = golfer => {setData({...data, 'name'  : golfer})}
     const incrStr      = (str, incr=1) => {return (parseInt(str) + incr).toString()};
 
@@ -197,58 +186,49 @@ const NewWeek = () => {
                         display='flex'
                         //flexDirection='left'
                     >
-                        <Autocomplete
-                            renderInput={(params) =>
-                                <TextField {...params} 
-                                    sx={
-                                        {
-                                            input: {
-                                                textAlign: 'center'
-                                            },
-                                        }
-                                    } label='Year'/>}
-                            options={years}
+                        <AppSelect
+                            label="Year"
+                            placeholder='year'
+                            name='year'
+                            onChange={e => {
+                                setData({...data, [e.target.name]: e.target.value})}}
                             value={data.year}
-                            selectOnFocus={false}
-                            autoHighlight
-                            autoComplete
-                            blurOnSelect
                             disabled={data.rows.length ? true : false}
-                            onChange={(_, value, __) => changeYear(value)}
                             sx = {{
-                                width: 200,
                                 "& .MuiFormLabel-root": {
                                     color: colors.greenAccent[400]
-                                }
+                                },
+                                width: 200,
+                                textAlign: 'center'
                             }}
-                        >
-                        </Autocomplete>
+                            valuesFunc={years.map((y, i) => {
+                                return <MenuItem key={i} value={y}>{y}</MenuItem>
+                            })}
+                        />
 
-                        <Autocomplete
-                            renderInput={(params) =>
-                                <TextField {...params} sx={{input: {textAlign: 'center'}}} label='Week'/>}
-                            options={weeks}
+                        <AppSelect
+                            label='Week'
+                            placeholder='week'
+                            name='week'
                             value={data.week}
-                            //style={{color: colors.greenAccent[400], fontSize: 16}}
                             selectOnFocus={false}
-                            autoHighlight
-                            autoComplete
-                            blurOnSelect
                             disabled={data.rows.length ? true : false}
-                            onChange={(_, value, __) => changeWeek(value)}
+                            onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
+                            valuesFunc={
+                                weeks.map((w, i) => {
+                                    return <MenuItem key={i} value={w}>{w}</MenuItem>
+                                })
+                            }
                             sx={
                                 {
-                                    input: {
-                                        textAlign: 'center'
-                                    },
                                     "& .MuiFormLabel-root": {
                                         color: colors.greenAccent[400]
                                     },
-                                    width: 200
+                                    width: 200,
+                                    textAlign: 'center'
                                 }
                             }
-                        >
-                        </Autocomplete>
+                        />
                     </Box>
 
                     <Box
@@ -287,17 +267,8 @@ const NewWeek = () => {
                         >
                         </Autocomplete>
 
-                        <FormControl
-                        sx = {{ ml: 5}}
-                        >
-                        <InputLabel
-                            style={{color: colors.greenAccent[400], fontSize: 16}}
-                        >
-                            Score
-                        </InputLabel>
-
-                        <Select
-                            value={data.score}
+                        <AppSelect
+                            label='Score'
                             placeholder='score'
                             onChange={e => {setData({...data, ['score']: e.target.value})}}
                             name='score'
@@ -305,18 +276,12 @@ const NewWeek = () => {
                                 textAlign: 'center',
                                 width: 250 
                             }}
-                            label='Score'
-                            blurOnSelect
                             disabled={data.week && data.year ? false : true}
-                        >
-                            {[...Array(40).keys()].map((v, i) => {
+                            valuesFunc={[...Array(40).keys()].map((v, i) => {
                                 const val = (i+20).toString();
                                 return <MenuItem key={i} value={val}>{val}</MenuItem>
-                            })
-                            }
-                        </Select>
-                    </FormControl>
-
+                            })}
+                        />
                     </Box>
 
                     <Box
@@ -337,7 +302,6 @@ const NewWeek = () => {
                         >
                             Add
                         </Button>
-
                     </Box>
                 </Box>
 
@@ -381,11 +345,8 @@ const NewWeek = () => {
                             Submit
                         </Button>
                     ) : ''}
-
                 </Box>
-
             </Box>
-
         </Box>
     )
 }

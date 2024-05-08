@@ -84,8 +84,8 @@ return (
                         >
                             <img
                                 alt='profile-user'
-                                width='100px'
-                                height='100px'
+                                width='150px'
+                                height='175px'
                                 src={`../../assets/bondi.jpg`}
                                 style={{cursor: 'pointer', borderRadius: '10%'}}
                             />
