@@ -77,17 +77,26 @@ const NewWeek = () => {
         for (const row of data.rows) {
             if (!data.allNames.includes(row.name)) {
                 console.log(`Noticed ${row.name} is not currently in the database. Adding now...`);
-                postNewGolfer({Names : row.name}).then((d) => {console.log('Response: ', d)});
+                console.log(row);
+                postNewGolfer(
+                    {
+                        'Names'    : row.name,
+                        [row.date] : row.score[0]
+
+                    })
+                    .then((d) => {console.log('Response: ', d)})
             }
         };
         
         // Add the new week via aggregate pipeline
         for (const row of data.rows) {
-            postUpdate(row)
-            .then((d) => {
-                console.log('Response: ', d);
-            });
-        }
+            console.log(row);
+            if (data.allNames.includes(row.name)) {
+                postUpdate(row)
+                .then((d) => {
+                    console.log('Response: ', d);
+                });
+        }}
 
         setData({...data, dialogSubmit: true});
     };

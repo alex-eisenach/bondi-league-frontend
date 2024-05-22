@@ -9,10 +9,14 @@ const rating = 69.3 / 2.0  // Course rating from blue tees
 
 export const handicap = (scores) => {
 
-    if (scores.length <= 8) {
+    if (scores.length <= 2) {
+        return 0.0
+    }
+    else if (scores.length <= 8) {
         // if less than 8 scores in record, just use whatever available
         return slopeUteCreek * (mean(scores) - rating);
-    } else {
+    } 
+    else {
         // if > 8 scores in record, pick the best 8 of the last 20
         if (scores.length < 20) {
             const bestEight = [...scores]
