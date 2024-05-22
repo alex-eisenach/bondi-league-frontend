@@ -70,10 +70,6 @@ const NewWeek = () => {
         setData({...data, auth: event.target.value})
     };
 
-    const handleCheckAuth = event => {
-        return data.auth === 'suckwithpace' ? true : false;
-    };
-
     const handleSubmit = (values) => {
         console.log('Posting values: ', data.rows);
 
@@ -245,7 +241,7 @@ const NewWeek = () => {
                             disabled={data.rows.length ? true : false}
                             onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
                             valuesFunc={
-                                weeks.map((w, i) => {
+                                data.allWeeks.map((w, i) => {
                                     return <MenuItem key={i} value={w}>{w}</MenuItem>
                                 })
                             }
@@ -464,7 +460,6 @@ const NewWeek = () => {
                     <TextField
                         autoFocus
                         required
-                        error={handleCheckAuth}
                         margin='dense'
                         id='name'
                         name='auth'
