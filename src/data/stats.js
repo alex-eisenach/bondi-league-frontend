@@ -25,6 +25,7 @@ export const handicap = (scores) => {
             return slopeUteCreek * (mean(bestEight) - rating);
         } else {
             const bestEight = [...scores]
+                .reverse() //assumes the scores are in chronological order
                 .slice(0, 21)
                 .sort((a, b) => a - b)
                 .slice(0, nRounds + 1)

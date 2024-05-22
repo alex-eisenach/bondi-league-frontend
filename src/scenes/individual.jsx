@@ -49,19 +49,7 @@ const Individual = (props) => {
     };
 
     const changeGolfer = golfer => {
-        const [scores, _] = selectData(
-            golfer,
-            data.allData,
-            rangeWeeks(data.allWeeks, data.startWeek, data.endWeek),
-            rangeYears(data.allYears, data.startYear, data.endYear)
-        );
-        if (scores.length > 0) {
-            const _handicap = handicap(scores);
-            const [_, _trendSlope] = trend(scores);
-            setData({...data, 'handicap': _handicap, 'trend' : _trendSlope, 'golfer' : golfer});
-        } else {
-            setData({...data, 'golfer': golfer});
-        }
+        setData({...data, 'golfer': golfer});
     };
 
     const dataHandler = ( (_allData) => {

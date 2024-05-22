@@ -43,24 +43,22 @@ export const getFlightsForDate = (allData, year, week) => {
 
     for (const obj of allData) {
         let handicapScores = [];
-        console.log(obj);
-        console.log(stringForDate(year, week));
         // get all scores up to year/week for handicap calc
         for (const [key, val] of Object.entries(obj)) {
             if (key == stringForDate(year, week)) {
                 if (val) grossScores[obj['Names']] = val;
             }
-            if (parseDateString(key)) {
+            else if (parseDateString(key)) {
+                // else if doesn't include the current week's score in handicap calc
                 if (val) handicapScores.push(val);
             }
         }
-        console.log(handicapScores);
         handicaps[obj['Names']] = handicap(handicapScores);
         if (grossScores[obj['Names']]) {
             scores.push([obj['Names'], handicaps[obj['Names']]]);
         }
     }
-    scores.sort( (a,b) => a[1]-b[1]);
+    scores.sort( (a,b) => a[1]-b[1] );
     const midpoint = Math.ceil(scores.length / 2);
 
     for (const i in scores) {
