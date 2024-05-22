@@ -1,7 +1,7 @@
 import * as React from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Autocomplete, Box, Button, IconButton, MenuItem, TextField, useTheme } from '@mui/material';
+import { Autocomplete, Box, Button, IconButton, MenuItem, TextField, useTheme, Slider } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { DataGrid } from "@mui/x-data-grid";
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -260,8 +260,10 @@ const NewWeek = () => {
                     <Box
                         mt='40px'
                         alignItems='center'
-                        justifyContent='center'
+                        //justifyContent='center'
                         display='flex'
+                        flexDirection='column'
+                        sx={{ minWidth: 400 }}
                     >
                         <Autocomplete
                             renderInput={(params) => (
@@ -287,26 +289,48 @@ const NewWeek = () => {
                                     "& .MuiFormLabel-root": {
                                         color: colors.greenAccent[400]
                                     },
-                                    width: 250
+                                    width: 400
                                 }
                             }
                         >
                         </Autocomplete>
 
-                        <AppSelect
-                            label='Score'
-                            placeholder='score'
+                        <Slider
+                            mt='40px'
+                            minWidth='150px'
+                            valueLabelDisplay='on'
+                            step={1}
+                            marks={[
+                                {
+                                    value: 20,
+                                    label: '20',
+                                },
+                                {
+                                    value: 30,
+                                    label: '30',
+                                },
+                                {
+                                    value: 40,
+                                    label: '40',
+                                },
+                                {
+                                    value: 50,
+                                    label: '50',
+                                },
+                                {
+                                    value: 60,
+                                    label: '60',
+                                },
+                                {
+                                    value: 70,
+                                    label: '70',
+                                },
+                            ]}
+                            min={20}
+                            max={70}
+                            defaultValue={[45]}
                             onChange={e => {setData({...data, ['score']: e.target.value})}}
-                            name='score'
-                            sx={{
-                                textAlign: 'center',
-                                width: 250 
-                            }}
-                            disabled={data.week && data.year ? false : true}
-                            valuesFunc={[...Array(40).keys()].map((v, i) => {
-                                const val = (i+20).toString();
-                                return <MenuItem key={i} value={val}>{val}</MenuItem>
-                            })}
+                            sx={{color: colors.greenAccent[400], mt: '50px'}}
                         />
                     </Box>
 
