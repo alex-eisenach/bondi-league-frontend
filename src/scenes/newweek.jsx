@@ -77,7 +77,7 @@ const NewWeek = () => {
         for (const row of data.rows) {
             if (!data.allNames.includes(row.name)) {
                 console.log(`Noticed ${row.name} is not currently in the database. Adding now...`);
-                postNewGolfer({Names : row.name.toUpperCase()}).then((d) => {console.log('Response: ', d)});
+                postNewGolfer({Names : row.name}).then((d) => {console.log('Response: ', d)});
             }
         };
         
@@ -159,7 +159,7 @@ const NewWeek = () => {
         let newRows = [...data.rows];
         const datum = {
             'date'  : `${data.year} Wk ${data.week}`,
-            'name'  : `${data.name}`,
+            'name'  : `${data.name.toUpperCase()}`,
             'score' : data.score
         };
         const datumExisting = newRows.filter(e => e.name === data.name);
@@ -326,7 +326,7 @@ const NewWeek = () => {
                                     label: '70',
                                 },
                             ]}
-                            min={20}
+                            min={30}
                             max={70}
                             defaultValue={[45]}
                             onChange={e => {setData({...data, ['score']: e.target.value})}}

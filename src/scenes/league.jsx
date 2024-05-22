@@ -1,4 +1,4 @@
-import { Box, MenuItem, useTheme, Typography } from '@mui/material';
+import { Box, MenuItem, Typography, useTheme } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import * as Plot from '@observablehq/plot';
 import { mean } from 'mathjs';
@@ -48,6 +48,7 @@ const League = (props) => {
     }, []);
 
     useEffect( () => {
+        if (!data.week || !data.year) return;
         const fd = getFlightsForDate(data.allData, data.year, data.week);
         if (!Object.keys(fd).length) return;
         let aWinner = [];

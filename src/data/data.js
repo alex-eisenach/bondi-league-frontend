@@ -33,6 +33,7 @@ export const stringForDate = (year, week) => {
 }
 
 export const getFlightsForDate = (allData, year, week) => {
+    console.log(year, week);
     let result = {};
     let grossScores = {};
     let handicaps = {};
@@ -42,6 +43,8 @@ export const getFlightsForDate = (allData, year, week) => {
 
     for (const obj of allData) {
         let handicapScores = [];
+        console.log(obj);
+        console.log(stringForDate(year, week));
         // get all scores up to year/week for handicap calc
         for (const [key, val] of Object.entries(obj)) {
             if (key == stringForDate(year, week)) {
@@ -51,6 +54,7 @@ export const getFlightsForDate = (allData, year, week) => {
                 if (val) handicapScores.push(val);
             }
         }
+        console.log(handicapScores);
         handicaps[obj['Names']] = handicap(handicapScores);
         if (grossScores[obj['Names']]) {
             scores.push([obj['Names'], handicaps[obj['Names']]]);
