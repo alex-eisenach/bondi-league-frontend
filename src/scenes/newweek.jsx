@@ -1,14 +1,21 @@
+import * as React from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Autocomplete, Box, Button, IconButton, MenuItem, TextField, useTheme } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { DataGrid } from "@mui/x-data-grid";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { postNewGolfer, postRemoveWeek, postUpdate } from '../backend/hooks';
 import Header from '../components/header';
 import AppSelect from '../components/select';
 import { getAllData, weeksForYear } from "../data/data";
 import { tokens } from "../theme";
+import { Link } from 'react-router-dom';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 
 const NewWeek = () => {
 
@@ -17,18 +24,21 @@ const NewWeek = () => {
     const colors = tokens(theme.palette.mode);
 
     const [data, setData] = useState({
-        week:        '',
-        year:        '',
-        score:       '',
-        name:        '',
-        rows:        [],
-        weekOptions: [],
-        yearOptions: [],
-        allWeeks:    [],
-        allYears:    [],
-        allStrs:     [],
-        allNames:    [],
-        allData:     []
+        week:         '',
+        year:         '',
+        score:        '',
+        name:         '',
+        rows:         [],
+        weekOptions:  [],
+        yearOptions:  [],
+        allWeeks:     [],
+        allYears:     [],
+        allStrs:      [],
+        allNames:     [],
+        allData:      [],
+        dialogOpen:   false,
+        dialogSubmit: false,
+        auth:         ''
     }); 
 
     const changeGolfer = golfer => {setData({...data, 'name'  : golfer})}
@@ -36,15 +46,36 @@ const NewWeek = () => {
 
     useEffect(() => {getAllData().then((d) => dataHandler(d))}, []);
 
+    const handleRemoveWeek = () => {
+        console.log('Removing week: ', data.week);
+        const removeStr = `${data.year} Wk ${data.week}`;
+        postRemoveWeek({key: removeStr}).then((d) => {console.log('Response: ', d)});
+        setData({...data, dialogOpen: false});
+        return null;
+    };
+
+    const handleDialogClose = () => {
+        setData({...data, dialogOpen: false})
+    };
+
+    const handleDialogOpen = () => {
+        setData({...data, dialogOpen: true})
+    };
+
+    const handleSubmitClose = () => {
+        setData({...data, dialogSubmit: false})
+    };
+
+    const handleAuth = event => {
+        setData({...data, auth: event.target.value})
+    };
+
+    const handleCheckAuth = event => {
+        return data.auth === 'suckwithpace' ? true : false;
+    };
+
     const handleSubmit = (values) => {
         console.log('Posting values: ', data.rows);
-
-        const remove = true;
-        if (remove) {
-            //debug
-            postRemoveWeek({key: '2024 Wk 1'}).then((d) => {console.log('Response: ', d)});
-            return null;
-        }
 
         // If new golfer is part of the pareto, add him first
         for (const row of data.rows) {
@@ -61,7 +92,9 @@ const NewWeek = () => {
                 console.log('Response: ', d);
             });
         }
-    }
+
+        setData({...data, dialogSubmit: true});
+    };
     
     const golferNames = useMemo(
         () => data.allNames.sort(),
@@ -70,10 +103,7 @@ const NewWeek = () => {
 
     const weeks = useMemo(
         () => {
-            const wksForYr = weeksForYear(data.allData, data.allYears.slice(-1)[0])
-            const nextWeek = wksForYr.slice(-1)[0] === '15' ? '1' : incrStr(data.allWeeks.slice(-1)[0]);
-            const weeks = [nextWeek, incrStr(nextWeek), incrStr(nextWeek, 2)];  // pad 2 weeks in case of rainouts
-            return weeks;
+            return weeksForYear(data.allData, data.allYears.slice(-1)[0]);
         },
         [data]
     );
@@ -129,7 +159,7 @@ const NewWeek = () => {
         }
     ];
 
-    const handleOnClick = () => {
+    const handleAddRow = () => {
         let newRows = [...data.rows];
         const datum = {
             'date'  : `${data.year} Wk ${data.week}`,
@@ -149,7 +179,7 @@ const NewWeek = () => {
         const datumExisting = newRows.filter(e => e.name === row.name);
         newRows.splice(newRows.indexOf(datumExisting[0]), 1);
         setData({...data, 'rows' : newRows});
-    }
+    };
 
     const dataHandler = ( (_allData) => {
         const [[...weeks], [...years], [...strs], [...names], [..._data]] = _allData;
@@ -289,6 +319,7 @@ const NewWeek = () => {
                         alignItems='center'
                         justifyContent='space-evenly'
                         display='flex'
+                        flexDirection='column'
                     >
 
                         <Button 
@@ -297,10 +328,22 @@ const NewWeek = () => {
                             sx={{minWidth: '250px'}} 
                             alignItems='center'
                             justifyContent='space-evenly'
-                            onClick={handleOnClick}
+                            onClick={handleAddRow}
                             disabled={data.week && data.year && data.name && data.score ? false : true}
                         >
                             Add
+                        </Button>
+
+                        <Button 
+                            variant='contained' 
+                            endIcon={<DeleteIcon />} 
+                            sx={{minWidth: '250px', mt: '40px'}} 
+                            alignItems='center'
+                            justifyContent='space-evenly'
+                            onClick={handleDialogOpen}
+                            disabled={data.week && data.year && data.name && data.score ? false : true}
+                        >
+                            Remove Week
                         </Button>
                     </Box>
                 </Box>
@@ -347,6 +390,93 @@ const NewWeek = () => {
                     ) : ''}
                 </Box>
             </Box>
+
+            <Dialog
+                open={data.dialogOpen}
+                onClose={handleDialogClose}
+            >
+                <DialogTitle>
+                    {"Hey!"}
+                </DialogTitle>
+
+                <DialogContent>
+                    <DialogContentText>
+                        Do you really want to remove the current year/week?
+                    </DialogContentText>
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        onClick={handleDialogClose}
+                        sx={{color: colors.greenAccent[400]}}
+                    >
+                        No
+                    </Button>
+                    <Button 
+                        onClick={handleRemoveWeek} 
+                        autoFocus
+                        sx={{color: colors.greenAccent[400]}}
+                    >
+                        Yes
+                    </Button>
+                </DialogActions>
+
+            </Dialog>
+
+            <Dialog
+                open={data.dialogSubmit}
+                onClose={handleSubmitClose}
+            >
+                <DialogTitle>
+                    {"Hey!"}
+                </DialogTitle>
+
+                <DialogContent>
+                    <DialogContentText>
+                        Score submission was successful.
+                    </DialogContentText>
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        sx={{color: colors.greenAccent[400]}}
+                        component={Link}
+                        to='/league'
+                        reloadDocument
+                    >
+                        Go to scoreboard
+                    </Button>
+                </DialogActions>
+
+            </Dialog>
+
+            <Dialog
+                open={data.auth === 'suckwithpace' ? false : true}
+            >
+                <DialogTitle>
+                    {"Hey!"}
+                </DialogTitle>
+
+                <DialogContent>
+                    <DialogContentText>
+                        Type in the secret password...
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        required
+                        error={handleCheckAuth}
+                        margin='dense'
+                        id='name'
+                        name='auth'
+                        label='Password'
+                        type='auth'
+                        fullWidth
+                        variant='standard'
+                        value={data.auth}
+                        onChange={handleAuth}
+                    />
+                </DialogContent>
+            </Dialog>
         </Box>
     )
 }

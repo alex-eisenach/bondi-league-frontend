@@ -4,7 +4,7 @@ const Dashboard = () => {
     return (
         <Box m='75px' alignItems='center'>
             <Box display='flex' justifyContent='space-between' alignItems='center'>
-                <Header title='Choose an item on the left' subtitle="...and don't forget to suck with pace" />
+                <Header title='Choose an item on the left' subtitle="and don't forget to suck with pace" />
             </Box>
             <Box display='flex' justifyContent='space-evenly' alignItems='center' mt='100px'>
                 <img
