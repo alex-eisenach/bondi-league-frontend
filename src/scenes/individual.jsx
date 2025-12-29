@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getAllData, getGolferStats, rangeWeeks, rangeYears, selectData } from "../data/data";
+import { getMetadata, getGolferStats } from "../data/data";
 import { tokens } from "../theme";
 
 const Individual = (props) => {
@@ -13,22 +13,18 @@ const Individual = (props) => {
     const colors = tokens(theme.palette.mode);
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
-    const [data, setData] = useState({
-        startWeek: '1',
-        endWeek: props.latestWeek,
-        startYear: '2022',
-        endYear: props.latestYear,
-        golfer: '',
-        allWeeks: [],
-        allYears: [],
-        allStrs: [],
-        allNames: [],
-        allData: [],
-        handicap: 0.0,
-        trend: 0.0,
-        bestScore: 0.0,
-        avgScore: 0.0
-    });
+    const [startWeek, setStartWeek] = useState('1');
+    const [endWeek, setEndWeek] = useState(props.latestWeek);
+    const [startYear, setStartYear] = useState('2022');
+    const [endYear, setEndYear] = useState(props.latestYear);
+    const [golfer, setGolfer] = useState('');
+    const [allWeeks, setAllWeeks] = useState([]);
+    const [allYears, setAllYears] = useState([]);
+    const [allNames, setAllNames] = useState([]);
+    const [handicap, setHandicap] = useState(0.0);
+    const [trend, setTrend] = useState(0.0);
+    const [bestScore, setBestScore] = useState(0.0);
+    const [avgScore, setAvgScore] = useState(0.0);
 
     function* tickCallbackTracker(_dates) {
         let yrTrack = null;
@@ -45,43 +41,34 @@ const Individual = (props) => {
     }
 
     const changeHandler = e => {
-        setData({ ...data, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'startWeek') setStartWeek(value);
+        if (name === 'endWeek') setEndWeek(value);
+        if (name === 'startYear') setStartYear(value);
+        if (name === 'endYear') setEndYear(value);
     };
 
     const changeGolfer = golfer => {
-        setData({ ...data, 'golfer': golfer });
+        setGolfer(golfer);
     };
 
-    const dataHandler = ((_allData) => {
-        const [weeks, years, strs, names, _data] = _allData;
-        setData({
-            ...data,
-            'allWeeks': [...weeks],
-            'allYears': [...years],
-            'allStrs': [...strs],
-            'allNames': [...names],
-            'allData': [..._data],
-        })
-    });
+    useEffect(() => {
+        getMetadata().then(meta => {
+            setAllWeeks(meta.weeks);
+            setAllYears(meta.years);
+            setAllNames(meta.names);
+        });
+    }, []);
 
     useEffect(() => {
-        getAllData().then(
-            (d) => dataHandler(d)
-        );
-    },
-        []
-    );
+        if (!allWeeks.length || !golfer) { return }
 
-    useEffect(() => {
-
-        if (!data.allWeeks.length || !data.golfer) { return }
-        // Fetch enriched data from backend
         getGolferStats(
-            data.golfer,
-            data.startYear,
-            data.startWeek,
-            data.endYear,
-            data.endWeek
+            golfer,
+            startYear,
+            startWeek,
+            endYear,
+            endWeek
         ).then(stats => {
             if (!stats || !stats.scores || stats.scores.length < 2) return;
 
@@ -180,15 +167,10 @@ const Individual = (props) => {
             });
             if (action.current) action.current.innerHTML = '';
             action.current.append(plot);
-            setData(
-                {
-                    ...data,
-                    'handicap': _handicap.toFixed(1),
-                    'trend': trendSlope[0].toFixed(2),
-                    'bestScore': Math.min(...scores),
-                    'avgScore': _avgScore.toFixed(1)
-                }
-            );
+            setHandicap(_handicap);
+            setTrend(trendSlope[0]);
+            setBestScore(Math.min(...scores));
+            setAvgScore(_avgScore);
 
             return () => plot.remove();
         });
@@ -216,7 +198,7 @@ const Individual = (props) => {
                 <Autocomplete
                     renderInput={(params) =>
                         <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
-                    options={data.allNames.sort()}
+                    options={allNames}
                     //style={{color: colors.greenAccent[400], fontSize: 16}}
                     selectOnFocus={false}
                     autoHighlight
@@ -230,7 +212,7 @@ const Individual = (props) => {
                 </Autocomplete>
             </Box>
 
-            {data.golfer !== '' && (
+            {golfer !== '' && (
                 <Box
                     mt='50px'
                     justifyContent='center'
@@ -244,10 +226,10 @@ const Individual = (props) => {
                         placeholder='startWeek'
                         name='startWeek'
                         onChange={changeHandler}
-                        value={data.startWeek}
+                        value={startWeek}
                         valuesFunc={
-                            data.allWeeks.map((week, i) => {
-                                if (parseInt(week) <= parseInt(data.endWeek)) {
+                            allWeeks.map((week, i) => {
+                                if (parseInt(week) <= parseInt(endWeek)) {
                                     return <MenuItem key={i} value={week}>{week}</MenuItem>
                                 }
                             })
@@ -258,9 +240,9 @@ const Individual = (props) => {
                         placeholder='endWeek'
                         name='endWeek'
                         onChange={changeHandler}
-                        value={data.endWeek}
-                        valuesFunc={data.allWeeks.map((week, i) => {
-                            if (parseInt(week) >= parseInt(data.startWeek)) {
+                        value={endWeek}
+                        valuesFunc={allWeeks.map((week, i) => {
+                            if (parseInt(week) >= parseInt(startWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
                         })}
@@ -270,9 +252,9 @@ const Individual = (props) => {
                         placeholder='startYear'
                         name='startYear'
                         onChange={changeHandler}
-                        value={data.startYear}
-                        valuesFunc={data.allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(data.endYear)) {
+                        value={startYear}
+                        valuesFunc={allYears.map((year, i) => {
+                            if (parseInt(year) <= parseInt(endYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         })}
@@ -282,9 +264,9 @@ const Individual = (props) => {
                         placeholder='endYear'
                         name='endYear'
                         onChange={changeHandler}
-                        value={data.endYear}
-                        valuesFunc={data.allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(data.startYear)) {
+                        value={endYear}
+                        valuesFunc={allYears.map((year, i) => {
+                            if (parseInt(year) >= parseInt(startYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         })}
@@ -292,7 +274,7 @@ const Individual = (props) => {
                 </Box>
             )}
 
-            {data.golfer !== '' && (
+            {golfer !== '' && (
                 <Box
                     mt='15px'
                     //justifyContent='end'
@@ -317,20 +299,20 @@ const Individual = (props) => {
                     >
                         <StatBox
                             title='Avg Score'
-                            subtitle={`${data.avgScore}`}
+                            subtitle={`${avgScore.toFixed(1)}`}
                         />
                         <StatBox
                             title='Handicap'
-                            subtitle={`${data.handicap}`}
+                            subtitle={`${handicap.toFixed(1)}`}
                         />
                         <StatBox
                             title='Trend'
-                            subtitle={((data.trend > 0.0) ? "+" : "").concat(`${data.trend}`)}
-                            statColor={(data.trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
+                            subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
+                            statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
                         />
                         <StatBox
                             title='Best Score'
-                            subtitle={`${data.bestScore}`}
+                            subtitle={`${bestScore}`}
                         />
                     </Box>
                 </Box>

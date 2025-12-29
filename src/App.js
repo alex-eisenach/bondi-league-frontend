@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ColorModeContext, useMode } from "./theme";
 import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import { Routes, Route } from "react-router-dom";
@@ -11,16 +11,24 @@ import League from './scenes/league';
 import Individual from './scenes/individual';
 import NewWeek from './scenes/newweek';
 
+import { getMetadata } from './backend/hooks';
+
 function App() {
 
     const [theme, colorMode] = useMode();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const [isSidebarToggled, setIsSidebarToggled] = useState(false);
+    const [latestWeek, setLatestWeek] = useState('');
+    const [latestYear, setLatestYear] = useState('');
+
+    useEffect(() => {
+        getMetadata().then(meta => {
+            setLatestWeek(meta.latestWeek);
+            setLatestYear(meta.latestYear);
+        });
+    }, []);
 
     console.log('Beginning the app...')
-
-    const latestWeek = '15';
-    const latestYear = '2023';
 
     return (
         <ColorModeContext.Provider value={colorMode}>

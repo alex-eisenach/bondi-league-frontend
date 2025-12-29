@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getAllData, getLeagueStats, weeksForYear } from "../data/data";
+import { getMetadata, getLeagueStats } from "../data/data";
 import { tokens } from "../theme";
 
 const League = (props) => {
@@ -15,46 +15,33 @@ const League = (props) => {
     const colors = tokens(theme.palette.mode);
     const action = useRef(null);
 
-    const [data, setData] = useState({
-        week: props.latestWeek,
-        year: props.latestYear,
-        allWeeks: [],
-        allYears: [],
-        allStrs: [],
-        allNames: [],
-        allData: [],
-        flightMap: [],
-        aWinner: '?',
-        bWinner: '?',
-        meanScore: '?',
-        lowNet: '?',
-    });
-
-    const yearChangeCallback = () => {
-        if (!data.week) { return '' }
-        const wksForYr = weeksForYear(data.allData, data.year);
-        if (!wksForYr.includes(data.week)) {
-            setData({ ...data, 'week': wksForYr[0] })
-            return wksForYr[0];
-        } else {
-            return data.week
-        };
-    };
+    const [week, setWeek] = useState(props.latestWeek);
+    const [year, setYear] = useState(props.latestYear);
+    const [allWeeks, setAllWeeks] = useState([]);
+    const [allYears, setAllYears] = useState([]);
+    const [yearsToWeeks, setYearsToWeeks] = useState({});
+    const [flightMap, setFlightMap] = useState({});
+    const [aWinner, setAWinner] = useState('?');
+    const [bWinner, setBWinner] = useState('?');
+    const [meanScore, setMeanScore] = useState('?');
+    const [lowNet, setLowNet] = useState('?');
 
     useEffect(() => {
-        getAllData().then(
-            (d) => dataHandler(d)
-        ).then(console.log('Data is now loaded'));
+        getMetadata().then(meta => {
+            setAllWeeks(meta.weeks);
+            setAllYears(meta.years);
+            setYearsToWeeks(meta.yearsToWeeks);
+        });
     }, []);
 
     useEffect(() => {
-        if (!data.week || !data.year) return;
+        if (!week || !year) return;
 
-        getLeagueStats(data.year, data.week).then(res => {
-            const { flightMap, summary } = res;
-            if (!flightMap || !summary || !Object.keys(flightMap).length) return;
+        getLeagueStats(year, week).then(res => {
+            const { flightMap: resFlightMap, summary } = res;
+            if (!resFlightMap || !summary || !Object.keys(resFlightMap).length) return;
 
-            const fd = flightMap;
+            const fd = resFlightMap;
 
             let grossScores = [];
             Object.keys(fd).forEach(e => { grossScores.push(fd[e].gross) })
@@ -99,36 +86,20 @@ const League = (props) => {
             if (action.current) action.current.innerHTML = '';
             action.current.append(plot);
 
-            setData(
-                {
-                    ...data,
-                    'flightMap': fd,
-                    'aWinner': summary.aWinner,
-                    'bWinner': summary.bWinner,
-                    'meanScore': summary.meanScore,
-                    'lowNet': summary.lowNet,
-                }
-            );
+            setFlightMap(fd);
+            setAWinner(summary.aWinner);
+            setBWinner(summary.bWinner);
+            setMeanScore(summary.meanScore);
+            setLowNet(summary.lowNet);
             return () => plot.remove();
         });
 
-    }, [data.allData, data.year, data.week]);
+    }, [year, week]);
 
-    const dataHandler = ((_allData) => {
-        const [weeks, years, strs, names, _data] = _allData;
-        setData({
-            ...data,
-            'allWeeks': [...weeks],
-            'allYears': [...years],
-            'allStrs': [...strs],
-            'allNames': [...names],
-            'allData': [..._data],
-        })
-    });
 
     const rows = (flight) => {
         let rows = [];
-        for (const [nameKey, obj] of Object.entries(data.flightMap)) {
+        for (const [nameKey, obj] of Object.entries(flightMap)) {
             if (obj.flight == flight) {
                 rows.push({
                     'Names': nameKey,
@@ -152,12 +123,16 @@ const League = (props) => {
         return columns;
     }
 
-    const changeWeek = (week) => {
-        setData({ ...data, 'week': week })
+    const changeWeek = (newWeek) => {
+        setWeek(newWeek);
     }
 
-    const changeYear = (year) => {
-        setData({ ...data, 'year': year })
+    const changeYear = (newYear) => {
+        setYear(newYear);
+        // Automatically select first week of next year if current week not available
+        if (yearsToWeeks[newYear] && !yearsToWeeks[newYear].includes(week)) {
+            setWeek(yearsToWeeks[newYear][0]);
+        }
     }
 
     return (
@@ -180,13 +155,13 @@ const League = (props) => {
                     label='Year'
                     placeholder='year'
                     name='year'
-                    onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
-                    value={data.year}
+                    onChange={e => changeYear(e.target.value)}
+                    value={year}
                     sx={{
                         width: 200
                     }}
                     valuesFunc={
-                        data.allYears.sort((a, b) => b - a).map((y, i) => {
+                        allYears.sort((a, b) => b - a).map((y, i) => {
                             return <MenuItem key={i} value={y}>{y}</MenuItem>
                         })
                     }
@@ -196,17 +171,17 @@ const League = (props) => {
                     label='Week'
                     placeholder='week'
                     name='week'
-                    onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
-                    value={yearChangeCallback()}
+                    onChange={e => changeWeek(e.target.value)}
+                    value={week}
                     sx={{
                         width: 200
                     }}
                     valuesFunc={
-                        (data.allData.length)
-                            ? weeksForYear(data.allData, data.year).sort((a, b) => b - a).map((y, i) => {
+                        (yearsToWeeks[year])
+                            ? yearsToWeeks[year].map((y, i) => {
                                 return <MenuItem key={i} value={y}>{y}</MenuItem>
                             })
-                            : [<MenuItem key={0} value={data.week}>{data.week}</MenuItem>]
+                            : [<MenuItem key={0} value={week}>{week}</MenuItem>]
                     }
                 />
             </Box>
@@ -221,10 +196,10 @@ const League = (props) => {
                     }
                 }
             >
-                <StatBox title='Avg Score' subtitle={data.meanScore} />
-                <StatBox title='A Flight Winner' subtitle={data.aWinner} />
-                <StatBox title='B Flight Winner' subtitle={data.bWinner} />
-                <StatBox title='Low Net' subtitle={data.lowNet} />
+                <StatBox title='Avg Score' subtitle={meanScore} />
+                <StatBox title='A Flight Winner' subtitle={aWinner} />
+                <StatBox title='B Flight Winner' subtitle={bWinner} />
+                <StatBox title='Low Net' subtitle={lowNet} />
 
             </Box>
 
