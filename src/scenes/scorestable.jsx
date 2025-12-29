@@ -2,7 +2,9 @@ import { Box, Typography, useTheme, Select, MenuItem, InputLabel, FormControl } 
 import { useState, useEffect, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../theme';
-import { getAllData, rangeWeeks, rangeYears, parseDateString } from '../data/data';
+import { getAllData } from '../backend/hooks';
+import { rangeWeeks, rangeYears, parseDateString } from '../data/data';
+import { useMetadata } from '../context/MetadataContext';
 import Header from '../components/header';
 
 const scoresComparator = (i, j) => {
@@ -22,67 +24,55 @@ const Scorestable = () => {
     const colors = tokens(theme.palette.mode);
     const action = useRef(null);
 
-    const changeHandler = e => {
-        setAllValues({ ...allValues, [e.target.name]: e.target.value });
-    };
-    const allDataHandler = ((_allData) => {
-        const [weeks, years, strs, names, data] = _allData;
-        const sortedYears = [...years].sort((a, b) => parseInt(b) - parseInt(a));
-        const sortedWeeks = [...weeks].sort((a, b) => parseInt(b) - parseInt(a));
+    const { allWeeks, allYears, latestYear, latestWeek, loading } = useMetadata();
 
-        const latestYear = sortedYears.length > 0 ? sortedYears[0] : '2022';
-        const minWeek = sortedWeeks.length > 0 ? sortedWeeks[sortedWeeks.length - 1] : '1';
-        const maxWeek = sortedWeeks.length > 0 ? sortedWeeks[0] : '1';
-
-        setAllValues(prevValues => ({
-            ...prevValues,
-            'allWeeks': [...weeks],
-            'allYears': [...years],
-            'allStrs': [...strs],
-            'allNames': [...names],
-            'allData': [...data],
-            'startYear': latestYear,
-            'endYear': latestYear,
-            'startWeek': minWeek,
-            'endWeek': maxWeek
-        }));
-    });
-
-    const [allValues, setAllValues] = useState({
-        startWeek: '1',
-        endWeek: '2',
-        startYear: '2022',
-        endYear: '2023',
-        allWeeks: [],
-        allYears: [],
-        allStrs: [],
-        allNames: [],
-        allData: []
-    });
+    const [startWeek, setStartWeek] = useState('1');
+    const [endWeek, setEndWeek] = useState('');
+    const [startYear, setStartYear] = useState('2022');
+    const [endYear, setEndYear] = useState('');
+    const [allData, setAllData] = useState([]);
 
     useEffect(() => {
-        getAllData().then(
-            (allData) => allDataHandler(allData)
-        );
-    },
-        []);
+        if (!loading) {
+            setStartYear(latestYear);
+            setEndYear(latestYear);
+            setStartWeek(allWeeks[0] || '1');
+            setEndWeek(latestWeek);
+        }
+    }, [loading, allWeeks, latestYear, latestWeek]);
+
+    useEffect(() => {
+        getAllData().then(data => setAllData(data));
+    }, []);
+
+    const changeHandler = e => {
+        const { name, value } = e.target;
+        if (name === 'startWeek') setStartWeek(value);
+        if (name === 'endWeek') setEndWeek(value);
+        if (name === 'startYear') setStartYear(value);
+        if (name === 'endYear') setEndYear(value);
+    };
 
     const rows = () => {
         let rows = [];
-        for (const obj of allValues.allData) {
+        for (const obj of allData) {
             let params = {};
+            let hasRecord = false;
             for (const [key, val] of Object.entries(obj)) {
                 const parsedData = parseDateString(key);
                 if (parsedData) {
                     const [_, year, week] = parsedData;
                     if (
-                        rangeWeeks(allValues.allWeeks, allValues.startWeek, allValues.endWeek)
+                        rangeWeeks(allWeeks, startWeek, endWeek)
                             .includes(week)
                         &&
-                        rangeYears(allValues.allYears, allValues.startYear, allValues.endYear)
+                        rangeYears(allYears, startYear, endYear)
                             .includes(year)
                     ) {
                         params[key] = val;
+                        if (val !== '' && val !== null) {
+                            hasRecord = true;
+                        }
                     }
                 }
                 else if (key === 'Names') {
@@ -92,7 +82,7 @@ const Scorestable = () => {
                     params['id'] = val;
                 }
             }
-            if (params) {
+            if (hasRecord) {
                 rows.push(params)
             }
         }
@@ -125,11 +115,11 @@ const Scorestable = () => {
 
     return (
         <Box
-            mt='25px'
-            ml='25px'
+            p='20px'
             textAlign='center'
-            alignItems='center'
-            sx={{ maxWidth: 'lg' }}
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', height: 'calc(100vh - 80px)' }}
         >
             <Header title='Master Spreadsheet' />
             <Box
@@ -149,15 +139,15 @@ const Scorestable = () => {
                     {/* ----- START WEEK ----- */}
                     <Select
                         action={action}
-                        value={allValues.startWeek}
+                        value={startWeek}
                         placeholder='startWeek'
                         onChange={changeHandler}
                         name='startWeek'
                         sx={{ minWidth: 125 }}
                         label='Start Week'
                     >
-                        {allValues.allWeeks.map((week, i) => {
-                            if (parseInt(week) <= parseInt(allValues.endWeek)) {
+                        {allWeeks.map((week, i) => {
+                            if (parseInt(week) <= parseInt(endWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
                         })
@@ -174,15 +164,15 @@ const Scorestable = () => {
                     </InputLabel>
                     <Select
                         action={action}
-                        value={allValues.endWeek}
+                        value={endWeek}
                         placeholder='endWeek'
                         onChange={changeHandler}
                         name='endWeek'
                         sx={{ minWidth: 125 }}
                         label='End Week'
                     >
-                        {allValues.allWeeks.map((week, i) => {
-                            if (parseInt(week) >= parseInt(allValues.startWeek)) {
+                        {allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                            if (parseInt(week) >= parseInt(startWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
                         }
@@ -199,15 +189,15 @@ const Scorestable = () => {
                     </InputLabel>
                     <Select
                         action={action}
-                        value={allValues.startYear}
+                        value={startYear}
                         placeholder='startYear'
                         onChange={changeHandler}
                         name='startYear'
                         label='Start Year'
                         sx={{ minWidth: 125 }}
                     >
-                        {allValues.allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(allValues.endYear)) {
+                        {allYears.map((year, i) => {
+                            if (parseInt(year) <= parseInt(endYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         })
@@ -224,15 +214,15 @@ const Scorestable = () => {
                     </InputLabel>
                     <Select
                         action={action}
-                        value={allValues.endYear}
+                        value={endYear}
                         placeholder='endYear'
                         onChange={changeHandler}
                         name='endYear'
                         label='End Year'
                         sx={{ minWidth: 125 }}
                     >
-                        {allValues.allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(allValues.startYear)) {
+                        {allYears.map((year, i) => {
+                            if (parseInt(year) >= parseInt(startYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         }
@@ -243,14 +233,31 @@ const Scorestable = () => {
             </Box>
 
             <Box
-                sx={{ width: '1' }}
+                sx={{
+                    flex: 1,
+                    width: '1',
+                    '& .MuiDataGrid-cell[data-field="Names"]': {
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                        zIndex: 1,
+                        borderRight: `1px solid ${colors.grey[700]}`,
+                    },
+                    '& .MuiDataGrid-columnHeader[data-field="Names"]': {
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                        zIndex: 2,
+                        borderRight: `1px solid ${colors.grey[700]}`,
+                    },
+                }}
             >
                 <DataGrid
                     columns={columns()}
                     rows={rows()}
                     initialState={{
                         sorting: {
-                            sortModel: [{ field: 'Golfers', sort: 'asc' }]
+                            sortModel: [{ field: 'Names', sort: 'asc' }]
                         }
                     }}
                     sx={{

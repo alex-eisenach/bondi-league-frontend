@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { postNewGolfer, postRemoveWeek, postUpdate } from '../backend/hooks';
 import Header from '../components/header';
 import AppSelect from '../components/select';
-import { getAllData, weeksForYear } from "../data/data";
+import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
@@ -23,59 +23,63 @@ const NewWeek = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
-    const [data, setData] = useState({
-        week: '',
-        year: '',
-        score: '',
-        name: '',
-        rows: [],
-        weekOptions: [],
-        yearOptions: [],
-        allWeeks: [],
-        allYears: [],
-        allStrs: [],
-        allNames: [],
-        allData: [],
-        dialogOpen: false,
-        dialogSubmit: false,
-        auth: ''
-    });
+    const { allWeeks, allYears, allNames, yearsToWeeks, latestYear, latestWeek, loading } = useMetadata();
 
-    const changeGolfer = golfer => { setData({ ...data, 'name': golfer }) }
+    const [week, setWeek] = useState('');
+    const [year, setYear] = useState('');
+    const [score, setScore] = useState('');
+    const [name, setName] = useState('');
+    const [rowsState, setRowsState] = useState([]);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogSubmit, setDialogSubmit] = useState(false);
+    const [auth, setAuth] = useState('');
+
+    const changeGolfer = golfer => { setName(golfer) }
     const incrStr = (str, incr = 1) => { return (parseInt(str) + incr).toString() };
 
-    useEffect(() => { getAllData().then((d) => dataHandler(d)) }, []);
+    useEffect(() => {
+        if (!loading) {
+            // Set defaults for new week (next week after latest)
+            if (parseInt(latestWeek) < 15) {
+                setYear(latestYear);
+                setWeek(incrStr(latestWeek));
+            } else {
+                setYear(incrStr(latestYear));
+                setWeek('1');
+            }
+        }
+    }, [loading, latestYear, latestWeek]);
 
     const handleRemoveWeek = () => {
-        console.log('Removing week: ', data.week);
-        const removeStr = `${data.year} Wk ${data.week}`;
+        console.log('Removing week: ', week);
+        const removeStr = `${year} Wk ${week}`;
         postRemoveWeek({ key: removeStr }).then((d) => { console.log('Response: ', d) });
-        setData({ ...data, dialogOpen: false });
+        setDialogOpen(false);
         return null;
     };
 
     const handleDialogClose = () => {
-        setData({ ...data, dialogOpen: false })
+        setDialogOpen(false);
     };
 
     const handleDialogOpen = () => {
-        setData({ ...data, dialogOpen: true })
+        setDialogOpen(true);
     };
 
     const handleSubmitClose = () => {
-        setData({ ...data, dialogSubmit: false })
+        setDialogSubmit(false);
     };
 
     const handleAuth = event => {
-        setData({ ...data, auth: event.target.value })
+        setAuth(event.target.value);
     };
 
     const handleSubmit = (values) => {
-        console.log('Posting values: ', data.rows);
+        console.log('Posting values: ', rowsState);
 
         // If new golfer is part of the pareto, add him first
-        for (const row of data.rows) {
-            if (!data.allNames.includes(row.name)) {
+        for (const row of rowsState) {
+            if (!allNames.includes(row.name)) {
                 console.log(`Noticed ${row.name} is not currently in the database. Adding now...`);
                 console.log(row);
                 postNewGolfer(
@@ -89,9 +93,9 @@ const NewWeek = () => {
         };
 
         // Add the new week via aggregate pipeline
-        for (const row of data.rows) {
+        for (const row of rowsState) {
             console.log(row);
-            if (data.allNames.includes(row.name)) {
+            if (allNames.includes(row.name)) {
                 postUpdate(row)
                     .then((d) => {
                         console.log('Response: ', d);
@@ -99,34 +103,36 @@ const NewWeek = () => {
             }
         }
 
-        setData({ ...data, dialogSubmit: true });
+        setDialogSubmit(true);
     };
 
     const golferNames = useMemo(
-        () => data.allNames.sort(),
-        [data]
+        () => allNames.sort(),
+        [allNames]
     );
 
     const weeks = useMemo(
         () => {
-            return weeksForYear(data.allData, data.allYears.slice(-1)[0]);
+            return yearsToWeeks[allYears.slice(-1)[0]] || [];
         },
-        [data]
+        [yearsToWeeks, allYears]
     );
 
     const years = useMemo(
         () => {
-            const wksForYr = weeksForYear(data.allData, data.allYears.slice(-1)[0]);
-            const nextYear = incrStr(data.allYears.slice(-1)[0]);
-            return wksForYr.slice(-1)[0] === '15' ? [nextYear, incrStr(nextYear)] : [data.allYears.slice(-1)[0], nextYear];
+            if (!allYears.length) return [];
+            const lastYear = allYears.slice(-1)[0];
+            const wksForYr = yearsToWeeks[lastYear] || [];
+            const nextYear = incrStr(lastYear);
+            return wksForYr.slice(-1)[0] === '15' ? [nextYear, incrStr(nextYear)] : [lastYear, nextYear];
         },
-        [data]
+        [allYears, yearsToWeeks]
     );
 
     const rows = useMemo(
         () => {
             let _rows = [];
-            for (const datum of data.rows) {
+            for (const datum of rowsState) {
                 _rows.push({
                     'name': datum.name,
                     'score': datum.score,
@@ -134,7 +140,7 @@ const NewWeek = () => {
                 });
             }
             return _rows;
-        }, [data.rows]);
+        }, [rowsState]);
 
     const columns = [
         {
@@ -166,42 +172,34 @@ const NewWeek = () => {
     ];
 
     const handleAddRow = () => {
-        let newRows = [...data.rows];
+        let newRows = [...rowsState];
         const datum = {
-            'date': `${data.year} Wk ${data.week}`,
-            'name': `${data.name.toUpperCase()}`,
-            'score': data.score
+            'date': `${year} Wk ${week}`,
+            'name': `${name.toUpperCase()}`,
+            'score': score
         };
-        const datumExisting = newRows.filter(e => e.name === data.name);
+        const datumExisting = newRows.filter(e => e.name === name);
         if (datumExisting.length) {
             newRows[newRows.indexOf(datumExisting[0])] = datum;
         }
         else { newRows.push(datum) };
-        setData({ ...data, 'rows': newRows });
+        setRowsState(newRows);
     };
 
     const handleDeleteRow = (e, row) => {
-        let newRows = [...data.rows];
+        let newRows = [...rowsState];
         const datumExisting = newRows.filter(e => e.name === row.name);
         newRows.splice(newRows.indexOf(datumExisting[0]), 1);
-        setData({ ...data, 'rows': newRows });
+        setRowsState(newRows);
     };
 
-    const dataHandler = ((_allData) => {
-        const [[...weeks], [...years], [...strs], [...names], [..._data]] = _allData;
-        setData({
-            ...data,
-            'allWeeks': weeks,
-            'allYears': years,
-            'allStrs': strs,
-            'allNames': names,
-            'allData': _data,
-        })
-    });
 
     return (
         <Box
-            m='20px'
+            p='20px'
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
         >
             <Header title='Add New Week' />
             <Box
@@ -226,11 +224,9 @@ const NewWeek = () => {
                             label="Year"
                             placeholder='year'
                             name='year'
-                            onChange={e => {
-                                setData({ ...data, [e.target.name]: e.target.value })
-                            }}
-                            value={data.year}
-                            disabled={data.rows.length ? true : false}
+                            onChange={e => setYear(e.target.value)}
+                            value={year}
+                            disabled={rowsState.length ? true : false}
                             sx={{
                                 "& .MuiFormLabel-root": {
                                     color: colors.greenAccent[400]
@@ -247,12 +243,12 @@ const NewWeek = () => {
                             label='Week'
                             placeholder='week'
                             name='week'
-                            value={data.week}
+                            value={week}
                             selectOnFocus={false}
-                            disabled={data.rows.length ? true : false}
-                            onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
+                            disabled={rowsState.length ? true : false}
+                            onChange={e => setWeek(e.target.value)}
                             valuesFunc={
-                                data.allWeeks.map((w, i) => {
+                                allWeeks.map((w, i) => {
                                     return <MenuItem key={i} value={w}>{w}</MenuItem>
                                 })
                             }
@@ -281,14 +277,14 @@ const NewWeek = () => {
                                 <TextField {...params} sx={{ input: { textAlign: 'center' } }} label='Golfer' />
                             )}
                             options={golferNames}
-                            value={data.name}
+                            value={name}
                             selectOnFocus={false}
                             clearOnBlur
                             autoHighlight
                             autoComplete
                             blurOnSelect
                             freeSolo
-                            disabled={data.week && data.year ? false : true}
+                            disabled={week && year ? false : true}
                             onInputChange={(_, value, __) => {
                                 changeGolfer(value)
                             }}
@@ -340,7 +336,7 @@ const NewWeek = () => {
                             min={30}
                             max={70}
                             defaultValue={[45]}
-                            onChange={e => { setData({ ...data, ['score']: e.target.value }) }}
+                            onChange={e => setScore(e.target.value)}
                             sx={{ color: colors.greenAccent[400], mt: '50px' }}
                         />
                     </Box>
@@ -360,7 +356,7 @@ const NewWeek = () => {
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleAddRow}
-                            disabled={data.week && data.year && data.name && data.score ? false : true}
+                            disabled={week && year && name && score ? false : true}
                         >
                             Add
                         </Button>
@@ -372,7 +368,7 @@ const NewWeek = () => {
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleDialogOpen}
-                            disabled={data.week && data.year && data.name && data.score ? false : true}
+                            disabled={week && year && name && score ? false : true}
                         >
                             Remove Week
                         </Button>
@@ -387,6 +383,7 @@ const NewWeek = () => {
                     display='flex'
                     flexDirection='column'
                     width={isNonMobile ? 'auto' : '100%'}
+                    sx={{ flex: 1 }}
                 >
                     <DataGrid
                         columns={columns}
@@ -409,7 +406,7 @@ const NewWeek = () => {
                         }}
                     />
 
-                    {data.rows.length ? (
+                    {rowsState.length ? (
                         <Button
                             variant='contained'
                             endIcon={<AddIcon />}
@@ -425,7 +422,7 @@ const NewWeek = () => {
             </Box>
 
             <Dialog
-                open={data.dialogOpen}
+                open={dialogOpen}
                 onClose={handleDialogClose}
             >
                 <DialogTitle>
@@ -457,7 +454,7 @@ const NewWeek = () => {
             </Dialog>
 
             <Dialog
-                open={data.dialogSubmit}
+                open={dialogSubmit}
                 onClose={handleSubmitClose}
             >
                 <DialogTitle>
@@ -484,7 +481,7 @@ const NewWeek = () => {
             </Dialog>
 
             <Dialog
-                open={false} //{data.auth === 'suckwithpace' ? false : true}
+                open={false} //{auth === 'suckwithpace' ? false : true}
                 hideBackdrop={true}
                 disableEnforceFocus={true}
                 disableScrollLock={true}
@@ -513,7 +510,7 @@ const NewWeek = () => {
                         type='auth'
                         fullWidth
                         variant='standard'
-                        value={data.auth}
+                        value={auth}
                         onChange={handleAuth}
                     />
                 </DialogContent>
