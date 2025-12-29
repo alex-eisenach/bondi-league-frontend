@@ -1,4 +1,4 @@
-import { Autocomplete, Box, MenuItem, TextField, useTheme } from '@mui/material';
+import { Autocomplete, Box, MenuItem, TextField, useTheme, useMediaQuery } from '@mui/material';
 import * as Plot from '@observablehq/plot';
 import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
@@ -12,22 +12,23 @@ const Individual = (props) => {
 
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
     const [data, setData] = useState({
         startWeek: '1',
-        endWeek:   props.latestWeek,
+        endWeek: props.latestWeek,
         startYear: '2022',
-        endYear:   props.latestYear,
-        golfer:    '',
-        allWeeks:  [],
-        allYears:  [],
-        allStrs:   [],
-        allNames:  [],
-        allData:   [],
-        handicap:  0.0,
-        trend:     0.0,
+        endYear: props.latestYear,
+        golfer: '',
+        allWeeks: [],
+        allYears: [],
+        allStrs: [],
+        allNames: [],
+        allData: [],
+        handicap: 0.0,
+        trend: 0.0,
         bestScore: 0.0,
-        avgScore:  0.0
+        avgScore: 0.0
     });
 
     function* tickCallbackTracker(_dates) {
@@ -45,36 +46,36 @@ const Individual = (props) => {
     }
 
     const changeHandler = e => {
-        setData({...data, [e.target.name]: e.target.value});
+        setData({ ...data, [e.target.name]: e.target.value });
     };
 
     const changeGolfer = golfer => {
-        setData({...data, 'golfer': golfer});
+        setData({ ...data, 'golfer': golfer });
     };
 
-    const dataHandler = ( (_allData) => {
+    const dataHandler = ((_allData) => {
         const [weeks, years, strs, names, _data] = _allData;
         setData({
             ...data,
-            'allWeeks'   : [...weeks],
-            'allYears'   : [...years],
-            'allStrs'    : [...strs],
-            'allNames'   : [...names],
-            'allData'    : [..._data],
+            'allWeeks': [...weeks],
+            'allYears': [...years],
+            'allStrs': [...strs],
+            'allNames': [...names],
+            'allData': [..._data],
         })
     });
 
-    useEffect( () => {
-            getAllData().then(
-                (d) => dataHandler(d)
-            );
-        },
+    useEffect(() => {
+        getAllData().then(
+            (d) => dataHandler(d)
+        );
+    },
         []
     );
 
-    useEffect( () => {
+    useEffect(() => {
 
-        if (!data.allWeeks.length || !data.golfer) {return}
+        if (!data.allWeeks.length || !data.golfer) { return }
         // On change of any input box data, reselect scores and dates
         const [scores, dates] = selectData(
             data.golfer,
@@ -82,7 +83,7 @@ const Individual = (props) => {
             rangeWeeks(data.allWeeks, data.startWeek, data.endWeek),
             rangeYears(data.allYears, data.startYear, data.endYear)
         );
-        if (scores.length < 2) {return}
+        if (scores.length < 2) { return }
 
         // Handle updates to golfer metrics
         const _handicap = handicap(scores);
@@ -92,25 +93,25 @@ const Individual = (props) => {
         const genYearTicks = tickCallbackTracker([...dates]);
         let yrTicks = [];
         for (const _date of genYearTicks) {
-            if (_date) {yrTicks.push(_date)}
+            if (_date) { yrTicks.push(_date) }
         }
 
         const [trendIntercept, trendSlope] = trend(scores);
         const trendX = [...Array(scores.length).keys()];
-        const trendY = trendX.map(x => x*trendSlope[0] + trendIntercept[0]);
+        const trendY = trendX.map(x => x * trendSlope[0] + trendIntercept[0]);
 
         const plot = Plot.plot({
-            width: 1080, height: 400,
+            width: isMobile ? (window.innerWidth - 60) : 1080, height: isMobile ? 300 : 400,
             marginBottom: 60,
             y: {
                 grid: true,
-                domain: [Math.min(...scores)-5, Math.max(...scores)+5],
+                domain: [Math.min(...scores) - 5, Math.max(...scores) + 5],
             },
-            x : {
+            x: {
                 domain: dates
             },
             marks: [
-                Plot.ruleY([Math.min(...scores)-5]),
+                Plot.ruleY([Math.min(...scores) - 5]),
                 Plot.axisX({
                     // Axis ticks for the Week
                     tickSize: 8,
@@ -130,7 +131,7 @@ const Individual = (props) => {
                     x: yrTicks,
                     tickSize: 26,
                     tickPadding: -8,
-                    tickFormat: (s,i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
+                    tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
                     textAnchor: 'start',
                     fontSize: 12
                 }),
@@ -164,7 +165,7 @@ const Individual = (props) => {
                         x: dates,
                         y: scores,
                         dy: 15,
-                        text: (d, i) => `Net Score: ${(d-_handicap).toFixed(1)}`,
+                        text: (d, i) => `Net Score: ${(d - _handicap).toFixed(1)}`,
                         fontSize: 12
                     }),
                 ),
@@ -183,18 +184,18 @@ const Individual = (props) => {
         setData(
             {
                 ...data,
-                'handicap'  : _handicap.toFixed(1),
-                'trend'     : _trendSlope[0].toFixed(2),
-                'bestScore' : Math.min(...scores),
-                'avgScore'  : avgScore(scores).toFixed(1)
+                'handicap': _handicap.toFixed(1),
+                'trend': _trendSlope[0].toFixed(2),
+                'bestScore': Math.min(...scores),
+                'avgScore': avgScore(scores).toFixed(1)
             }
         );
 
         return () => plot.remove();
 
-    }, 
-    [data.golfer, data.endYear, data.endWeek, data.startYear, data.startWeek]
-);
+    },
+        [data.golfer, data.endYear, data.endWeek, data.startYear, data.startWeek, isMobile]
+    );
 
     return (
         <Box
@@ -202,9 +203,9 @@ const Individual = (props) => {
             textAlign='center'
             alignItems='center'
             justifyContent='center'
-            sx={{maxWidth: 'xl'}}
+            sx={{ maxWidth: 'xl' }}
         >
-            <Header title='Individual Golfer'/>
+            <Header title='Individual Golfer' />
 
             <Box
                 mt='20px'
@@ -214,7 +215,7 @@ const Individual = (props) => {
             >
                 <Autocomplete
                     renderInput={(params) =>
-                        <TextField {...params} sx={{input: {textAlign: 'center'}}} />}
+                        <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
                     options={data.allNames.sort()}
                     //style={{color: colors.greenAccent[400], fontSize: 16}}
                     selectOnFocus={false}
@@ -222,7 +223,7 @@ const Individual = (props) => {
                     autoComplete
                     blurOnSelect
                     onChange={(_, value, __) => changeGolfer(value)}
-                    sx = {{
+                    sx={{
                         width: 250
                     }}
                 >
@@ -235,8 +236,7 @@ const Individual = (props) => {
                     justifyContent='center'
                     alignItems='center'
                     display='flex'
-                    //padding='10px 10px'
-                    //sx = {{ m: 4}}
+                    flexWrap='wrap'
                 >
 
                     <AppSelect
@@ -296,21 +296,24 @@ const Individual = (props) => {
                 <Box
                     mt='15px'
                     //justifyContent='end'
-                    alignItems='left'
+                    alignItems='center'
                     display='flex'
+                    flexDirection={isMobile ? 'column' : 'row'}
                     padding='10px 0'
-                    ml='20px'
+                    ml={isMobile ? '0' : '20px'}
                 >
 
-                    <Box>
+                    <Box width={isMobile ? '100%' : 'auto'}>
                         <div ref={action} />
                     </Box>
 
                     <Box
                         display='flex'
-                        flexDirection='column'
+                        flexDirection={isMobile ? 'row' : 'column'}
                         justifyContent='space-evenly'
                         mb='25px'
+                        width={isMobile ? '100%' : 'auto'}
+                        flexWrap={isMobile ? 'wrap' : 'nowrap'}
                     >
                         <StatBox
                             title='Avg Score'
