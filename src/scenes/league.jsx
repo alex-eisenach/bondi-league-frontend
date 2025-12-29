@@ -16,38 +16,38 @@ const League = (props) => {
     const action = useRef(null);
 
     const [data, setData] = useState({
-        week:      props.latestWeek,
-        year:      props.latestYear,
-        allWeeks:  [],
-        allYears:  [],
-        allStrs:   [],
-        allNames:  [],
-        allData:   [],
+        week: props.latestWeek,
+        year: props.latestYear,
+        allWeeks: [],
+        allYears: [],
+        allStrs: [],
+        allNames: [],
+        allData: [],
         flightMap: [],
-        aWinner:   '?',
-        bWinner:   '?',
+        aWinner: '?',
+        bWinner: '?',
         meanScore: '?',
-        lowNet:    '?',
+        lowNet: '?',
     });
 
     const yearChangeCallback = () => {
-        if (!data.week) {return ''}
+        if (!data.week) { return '' }
         const wksForYr = weeksForYear(data.allData, data.year);
         if (!wksForYr.includes(data.week)) {
-            setData({...data, 'week' : wksForYr[0]})
+            setData({ ...data, 'week': wksForYr[0] })
             return wksForYr[0];
         } else {
             return data.week
         };
     };
 
-    useEffect( () => {
+    useEffect(() => {
         getAllData().then(
             (d) => dataHandler(d)
         ).then(console.log('Data is now loaded'));
     }, []);
 
-    useEffect( () => {
+    useEffect(() => {
         if (!data.week || !data.year) return;
         const fd = getFlightsForDate(data.allData, data.year, data.week);
         if (!Object.keys(fd).length) return;
@@ -56,28 +56,28 @@ const League = (props) => {
         let allScores = [];
 
         for (const [golfer, golferObj] of Object.entries(fd)) {
-            if (golferObj.flight == 'A') {aWinner.push([golfer, golferObj.net])}
-            if (golferObj.flight == 'B') {bWinner.push([golfer, golferObj.net])}
+            if (golferObj.flight == 'A') { aWinner.push([golfer, golferObj.net]) }
+            if (golferObj.flight == 'B') { bWinner.push([golfer, golferObj.net]) }
             allScores.push(golferObj.gross);
         }
 
-        aWinner.sort((a,b) => a[1]-b[1]);
-        bWinner.sort((a,b) => a[1]-b[1]);
+        aWinner.sort((a, b) => a[1] - b[1]);
+        bWinner.sort((a, b) => a[1] - b[1]);
         const [lowGolfer, lowNet] = (aWinner[0][1] < bWinner[0][1]) ? aWinner[0] : bWinner[0];
 
         let grossScores = [];
-        Object.keys(fd).forEach(e => {grossScores.push(fd[e].gross)})
+        Object.keys(fd).forEach(e => { grossScores.push(fd[e].gross) })
         let netScores = [];
-        Object.keys(fd).forEach(e => {netScores.push(fd[e].net)})
+        Object.keys(fd).forEach(e => { netScores.push(fd[e].net) })
         const xMin = Math.min(...netScores);
         const xMax = Math.max(...grossScores);
 
         let testData = [];
         for (const [golfer, golferObj] of Object.entries(fd)) {
             let t = {};
-            t['name']  = golfer;
+            t['name'] = golfer;
             t['gross'] = golferObj.gross;
-            t['net']   = golferObj.net;
+            t['net'] = golferObj.net;
             testData.push(t);
         }
 
@@ -87,21 +87,21 @@ const League = (props) => {
             axis: null,
             grid: true,
             x: {
-                domain: [xMin-5, xMax+2]
+                domain: [xMin - 5, xMax + 2]
             },
             marks: [
-                Plot.axisX({fontSize: 14, anchor: 'top', tickPadding: 10, tickSize: 6}),
-                Plot.gridX({strokeOpacity: 0.25}),
-                Plot.dot(testData, {x: 'gross', y: 'name', r: 5}),
-                Plot.dot(testData,{x: 'net', y: 'name', r: 5, symbol: 'asterisk'}),
-                Plot.dot(testData, Plot.pointer({x: 'net', y: 'name', r: 8, fill: colors.greenAccent[400], symbol: 'star', maxRadius: 10})),
-                Plot.dot(testData, Plot.pointer({x: 'gross', y: 'name', r: 8, fill: colors.greenAccent[400], maxRadius: 10})),
-                Plot.ruleY(testData, Plot.groupY({x1: 'min', x2: 'max'}, {x1: 'net', x2: 'gross', y: 'name', sort: {y: 'x1'}, strokeWidth: 3})),
-                Plot.text(testData, {x: 'net', y: 'name', text: 'name', textAnchor: 'end', dx: -15, stroke: colors.greenAccent[400], strokeWidth: 0.5}),
-                Plot.ruleX(testData, Plot.pointer({x: 'net', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10})),
-                Plot.ruleX(testData, Plot.pointer({x: 'gross', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10})),
-                Plot.text(testData, Plot.pointer({x: 'net', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Net Score: ${d.net.toFixed(2)}`, fontSize: 14, maxRadius: 10})),
-                Plot.text(testData, Plot.pointer({x: 'gross', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Gross Score: ${d.gross.toFixed(0)}`, fontSize: 14, maxRadius: 10})),
+                Plot.axisX({ fontSize: 14, anchor: 'top', tickPadding: 10, tickSize: 6 }),
+                Plot.gridX({ strokeOpacity: 0.25 }),
+                Plot.dot(testData, { x: 'gross', y: 'name', r: 5 }),
+                Plot.dot(testData, { x: 'net', y: 'name', r: 5, symbol: 'asterisk' }),
+                Plot.dot(testData, Plot.pointer({ x: 'net', y: 'name', r: 8, fill: colors.greenAccent[400], symbol: 'star', maxRadius: 10 })),
+                Plot.dot(testData, Plot.pointer({ x: 'gross', y: 'name', r: 8, fill: colors.greenAccent[400], maxRadius: 10 })),
+                Plot.ruleY(testData, Plot.groupY({ x1: 'min', x2: 'max' }, { x1: 'net', x2: 'gross', y: 'name', sort: { y: 'x1' }, strokeWidth: 3 })),
+                Plot.text(testData, { x: 'net', y: 'name', text: 'name', textAnchor: 'end', dx: -15, stroke: colors.greenAccent[400], strokeWidth: 0.5 }),
+                Plot.ruleX(testData, Plot.pointer({ x: 'net', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10 })),
+                Plot.ruleX(testData, Plot.pointer({ x: 'gross', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10 })),
+                Plot.text(testData, Plot.pointer({ x: 'net', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Net Score: ${d.net.toFixed(2)}`, fontSize: 14, maxRadius: 10 })),
+                Plot.text(testData, Plot.pointer({ x: 'gross', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Gross Score: ${d.gross.toFixed(0)}`, fontSize: 14, maxRadius: 10 })),
             ]
         });
 
@@ -110,26 +110,26 @@ const League = (props) => {
         setData(
             {
                 ...data,
-                'flightMap' : fd,
-                'aWinner'   : aWinner[0][0],
-                'bWinner'   : bWinner[0][0],
-                'meanScore' : mean(allScores).toFixed(1),
-                'lowNet'    : `${lowGolfer} (${lowNet.toFixed(2)})`,
+                'flightMap': fd,
+                'aWinner': aWinner[0][0],
+                'bWinner': bWinner[0][0],
+                'meanScore': mean(allScores).toFixed(1),
+                'lowNet': `${lowGolfer} (${lowNet.toFixed(2)})`,
             }
         );
         return () => plot.remove();
 
     }, [data.allData, data.year, data.week]);
 
-    const dataHandler = ( (_allData) => {
+    const dataHandler = ((_allData) => {
         const [weeks, years, strs, names, _data] = _allData;
         setData({
             ...data,
-            'allWeeks' : [...weeks],
-            'allYears' : [...years],
-            'allStrs'  : [...strs],
-            'allNames' : [...names],
-            'allData'  : [..._data],
+            'allWeeks': [...weeks],
+            'allYears': [...years],
+            'allStrs': [...strs],
+            'allNames': [...names],
+            'allData': [..._data],
         })
     });
 
@@ -138,11 +138,11 @@ const League = (props) => {
         for (const [nameKey, obj] of Object.entries(data.flightMap)) {
             if (obj.flight == flight) {
                 rows.push({
-                    'Names'      : nameKey,
+                    'Names': nameKey,
                     'Gross Score': obj.gross,
-                    'Net Score'  : obj.net.toFixed(2),
-                    'Handicap'   : obj.handicap.toFixed(1),
-                    'id'         : nameKey,
+                    'Net Score': obj.net.toFixed(2),
+                    'Handicap': obj.handicap.toFixed(1),
+                    'id': nameKey,
                 });
             }
         }
@@ -151,20 +151,20 @@ const League = (props) => {
 
     const columns = () => {
         let columns = [];
-        columns.push({field: 'Names',       headerName: 'Golfers', width: 200});
-        columns.push({field: 'Gross Score', headerName: 'Gross Score'});
-        columns.push({field: 'Handicap',    headerName: '9-Hole Handicap', width: 150});
-        columns.push({field: 'Net Score',   headerName: 'Net Score'});
+        columns.push({ field: 'Names', headerName: 'Golfers', width: 200 });
+        columns.push({ field: 'Gross Score', headerName: 'Gross Score' });
+        columns.push({ field: 'Handicap', headerName: '9-Hole Handicap', width: 150 });
+        columns.push({ field: 'Net Score', headerName: 'Net Score' });
 
         return columns;
     }
 
     const changeWeek = (week) => {
-        setData({...data, 'week' : week})
+        setData({ ...data, 'week': week })
     }
 
     const changeYear = (year) => {
-        setData({...data, 'year' : year})
+        setData({ ...data, 'year': year })
     }
 
     return (
@@ -173,9 +173,9 @@ const League = (props) => {
             textAlign='center'
             alignItems='center'
             justifyContent='center'
-            sx={{maxWidth: 'xl'}}
+            sx={{ maxWidth: 'xl' }}
         >
-            <Header title='League Stats Per Week'/>
+            <Header title='League Stats Per Week' />
 
             <Box
                 mt='20px'
@@ -187,13 +187,13 @@ const League = (props) => {
                     label='Year'
                     placeholder='year'
                     name='year'
-                    onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
+                    onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
                     value={data.year}
-                    sx = {{
+                    sx={{
                         width: 200
                     }}
                     valuesFunc={
-                        data.allYears.map((y, i) => {
+                        data.allYears.sort((a, b) => b - a).map((y, i) => {
                             return <MenuItem key={i} value={y}>{y}</MenuItem>
                         })
                     }
@@ -203,16 +203,16 @@ const League = (props) => {
                     label='Week'
                     placeholder='week'
                     name='week'
-                    onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
+                    onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
                     value={yearChangeCallback()}
-                    sx = {{
+                    sx={{
                         width: 200
                     }}
                     valuesFunc={
                         (data.allData.length)
-                            ? weeksForYear(data.allData, data.year).map((y, i) => {
+                            ? weeksForYear(data.allData, data.year).sort((a, b) => b - a).map((y, i) => {
                                 return <MenuItem key={i} value={y}>{y}</MenuItem>
-                            }) 
+                            })
                             : [<MenuItem key={0} value={data.week}>{data.week}</MenuItem>]
                     }
                 />
@@ -220,18 +220,18 @@ const League = (props) => {
 
             <Box
                 mt='40px'
-                justifyContent = 'space-evenly'
+                justifyContent='space-evenly'
                 display='flex'
-                sx = {
+                sx={
                     {
                         minWidth: '125px'
                     }
                 }
             >
-                <StatBox title='Avg Score' subtitle={data.meanScore}/>
-                <StatBox title='A Flight Winner' subtitle={data.aWinner}/>
-                <StatBox title='B Flight Winner' subtitle={data.bWinner}/>
-                <StatBox title='Low Net' subtitle={data.lowNet}/>
+                <StatBox title='Avg Score' subtitle={data.meanScore} />
+                <StatBox title='A Flight Winner' subtitle={data.aWinner} />
+                <StatBox title='B Flight Winner' subtitle={data.bWinner} />
+                <StatBox title='Low Net' subtitle={data.lowNet} />
 
             </Box>
 
@@ -253,14 +253,14 @@ const League = (props) => {
                         variant='h2'
                         fontWeight='bold'
                         padding='10px'
-                        sx = {
+                        sx={
                             {
                                 border: 1,
                                 borderColor: colors.greenAccent[400],
                                 borderRadius: '5%'
                             }
                         }
-                        //sx = {{ color: colors.greenAccent[400] }}
+                    //sx = {{ color: colors.greenAccent[400] }}
                     >
                         A Flight
                     </Typography>
@@ -269,14 +269,14 @@ const League = (props) => {
                         variant='h2'
                         fontWeight='bold'
                         padding='10px'
-                        sx = {
+                        sx={
                             {
                                 border: 1,
                                 borderColor: colors.greenAccent[400],
                                 borderRadius: '5%'
                             }
                         }
-                        //sx = {{ color: colors.greenAccent[400] }}
+                    //sx = {{ color: colors.greenAccent[400] }}
                     >
                         B Flight
                     </Typography>
@@ -291,13 +291,13 @@ const League = (props) => {
                         columns={columns()}
                         rows={rows('A')}
                         hideFooter={true}
-                        initialState = {{
+                        initialState={{
                             sorting: {
-                                sortModel: [{field: 'Net Score', sort: 'asc'}]
+                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
                             }
                         }}
-                        sx = {{
-                            '& .MuiDataGrid-columnHeaders' : {
+                        sx={{
+                            '& .MuiDataGrid-columnHeaders': {
                                 color: `${colors.greenAccent[400]}`,
                                 fontWeight: 800
                             }
@@ -307,13 +307,13 @@ const League = (props) => {
                         columns={columns()}
                         rows={rows('B')}
                         hideFooter={true}
-                        initialState = {{
+                        initialState={{
                             sorting: {
-                                sortModel: [{field: 'Net Score', sort: 'asc'}]
+                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
                             }
                         }}
-                        sx = {{
-                            '& .MuiDataGrid-columnHeaders' : {
+                        sx={{
+                            '& .MuiDataGrid-columnHeaders': {
                                 color: `${colors.greenAccent[400]}`,
                                 fontWeight: 800
                             }

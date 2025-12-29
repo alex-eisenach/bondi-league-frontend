@@ -24,50 +24,50 @@ const NewWeek = () => {
     const colors = tokens(theme.palette.mode);
 
     const [data, setData] = useState({
-        week:         '',
-        year:         '',
-        score:        '',
-        name:         '',
-        rows:         [],
-        weekOptions:  [],
-        yearOptions:  [],
-        allWeeks:     [],
-        allYears:     [],
-        allStrs:      [],
-        allNames:     [],
-        allData:      [],
-        dialogOpen:   false,
+        week: '',
+        year: '',
+        score: '',
+        name: '',
+        rows: [],
+        weekOptions: [],
+        yearOptions: [],
+        allWeeks: [],
+        allYears: [],
+        allStrs: [],
+        allNames: [],
+        allData: [],
+        dialogOpen: false,
         dialogSubmit: false,
-        auth:         ''
-    }); 
+        auth: ''
+    });
 
-    const changeGolfer = golfer => {setData({...data, 'name'  : golfer})}
-    const incrStr      = (str, incr=1) => {return (parseInt(str) + incr).toString()};
+    const changeGolfer = golfer => { setData({ ...data, 'name': golfer }) }
+    const incrStr = (str, incr = 1) => { return (parseInt(str) + incr).toString() };
 
-    useEffect(() => {getAllData().then((d) => dataHandler(d))}, []);
+    useEffect(() => { getAllData().then((d) => dataHandler(d)) }, []);
 
     const handleRemoveWeek = () => {
         console.log('Removing week: ', data.week);
         const removeStr = `${data.year} Wk ${data.week}`;
-        postRemoveWeek({key: removeStr}).then((d) => {console.log('Response: ', d)});
-        setData({...data, dialogOpen: false});
+        postRemoveWeek({ key: removeStr }).then((d) => { console.log('Response: ', d) });
+        setData({ ...data, dialogOpen: false });
         return null;
     };
 
     const handleDialogClose = () => {
-        setData({...data, dialogOpen: false})
+        setData({ ...data, dialogOpen: false })
     };
 
     const handleDialogOpen = () => {
-        setData({...data, dialogOpen: true})
+        setData({ ...data, dialogOpen: true })
     };
 
     const handleSubmitClose = () => {
-        setData({...data, dialogSubmit: false})
+        setData({ ...data, dialogSubmit: false })
     };
 
     const handleAuth = event => {
-        setData({...data, auth: event.target.value})
+        setData({ ...data, auth: event.target.value })
     };
 
     const handleSubmit = (values) => {
@@ -80,27 +80,28 @@ const NewWeek = () => {
                 console.log(row);
                 postNewGolfer(
                     {
-                        'Names'    : row.name,
-                        [row.date] : row.score[0]
+                        'Names': row.name,
+                        [row.date]: row.score[0]
 
                     })
-                    .then((d) => {console.log('Response: ', d)})
+                    .then((d) => { console.log('Response: ', d) })
             }
         };
-        
+
         // Add the new week via aggregate pipeline
         for (const row of data.rows) {
             console.log(row);
             if (data.allNames.includes(row.name)) {
                 postUpdate(row)
-                .then((d) => {
-                    console.log('Response: ', d);
-                });
-        }}
+                    .then((d) => {
+                        console.log('Response: ', d);
+                    });
+            }
+        }
 
-        setData({...data, dialogSubmit: true});
+        setData({ ...data, dialogSubmit: true });
     };
-    
+
     const golferNames = useMemo(
         () => data.allNames.sort(),
         [data]
@@ -127,9 +128,9 @@ const NewWeek = () => {
             let _rows = [];
             for (const datum of data.rows) {
                 _rows.push({
-                    'name'  : datum.name,
-                    'score' : datum.score,
-                    'id'    : datum.name
+                    'name': datum.name,
+                    'score': datum.score,
+                    'id': datum.name
                 });
             }
             return _rows;
@@ -137,26 +138,26 @@ const NewWeek = () => {
 
     const columns = [
         {
-            field     : 'name',
+            field: 'name',
             headerName: 'Golfer',
-            width     : 200
+            width: 200
         },
         {
-            field      : 'score',
-            headerName : 'Gross Score',
-            width      : 150
+            field: 'score',
+            headerName: 'Gross Score',
+            width: 150
         },
         {
-            field      : 'delete',
-            headerName : '',
-            renderCell : (params) => {
+            field: 'delete',
+            headerName: '',
+            renderCell: (params) => {
                 return (
                     <>
-                    <IconButton
-                        onClick={(e) => handleDeleteRow(e, params.row)}
-                    >
-                    <DeleteIcon />
-                    </IconButton>
+                        <IconButton
+                            onClick={(e) => handleDeleteRow(e, params.row)}
+                        >
+                            <DeleteIcon />
+                        </IconButton>
                     </>
                 )
             },
@@ -167,34 +168,34 @@ const NewWeek = () => {
     const handleAddRow = () => {
         let newRows = [...data.rows];
         const datum = {
-            'date'  : `${data.year} Wk ${data.week}`,
-            'name'  : `${data.name.toUpperCase()}`,
-            'score' : data.score
+            'date': `${data.year} Wk ${data.week}`,
+            'name': `${data.name.toUpperCase()}`,
+            'score': data.score
         };
         const datumExisting = newRows.filter(e => e.name === data.name);
         if (datumExisting.length) {
             newRows[newRows.indexOf(datumExisting[0])] = datum;
         }
-        else {newRows.push(datum)};
-        setData({...data, 'rows' : newRows});
+        else { newRows.push(datum) };
+        setData({ ...data, 'rows': newRows });
     };
 
     const handleDeleteRow = (e, row) => {
         let newRows = [...data.rows];
         const datumExisting = newRows.filter(e => e.name === row.name);
         newRows.splice(newRows.indexOf(datumExisting[0]), 1);
-        setData({...data, 'rows' : newRows});
+        setData({ ...data, 'rows': newRows });
     };
 
-    const dataHandler = ( (_allData) => {
+    const dataHandler = ((_allData) => {
         const [[...weeks], [...years], [...strs], [...names], [..._data]] = _allData;
         setData({
             ...data,
-            'allWeeks'    : weeks,
-            'allYears'    : years,
-            'allStrs'     : strs,
-            'allNames'    : names,
-            'allData'     : _data,
+            'allWeeks': weeks,
+            'allYears': years,
+            'allStrs': strs,
+            'allNames': names,
+            'allData': _data,
         })
     });
 
@@ -205,7 +206,7 @@ const NewWeek = () => {
             <Header title='Add New Week' />
             <Box
                 display='flex'
-                flexDirection='row'
+                flexDirection={isNonMobile ? 'row' : 'column'}
             >
                 <Box
                     mt='20px'
@@ -219,21 +220,22 @@ const NewWeek = () => {
                         alignItems='left'
                         justifyContent='left'
                         display='flex'
-                        //flexDirection='left'
+                    //flexDirection='left'
                     >
                         <AppSelect
                             label="Year"
                             placeholder='year'
                             name='year'
                             onChange={e => {
-                                setData({...data, [e.target.name]: e.target.value})}}
+                                setData({ ...data, [e.target.name]: e.target.value })
+                            }}
                             value={data.year}
                             disabled={data.rows.length ? true : false}
-                            sx = {{
+                            sx={{
                                 "& .MuiFormLabel-root": {
                                     color: colors.greenAccent[400]
                                 },
-                                width: 200,
+                                width: isNonMobile ? 200 : 150,
                                 textAlign: 'center'
                             }}
                             valuesFunc={years.map((y, i) => {
@@ -248,7 +250,7 @@ const NewWeek = () => {
                             value={data.week}
                             selectOnFocus={false}
                             disabled={data.rows.length ? true : false}
-                            onChange={e => {setData({...data, [e.target.name]: e.target.value})}}
+                            onChange={e => { setData({ ...data, [e.target.name]: e.target.value }) }}
                             valuesFunc={
                                 data.allWeeks.map((w, i) => {
                                     return <MenuItem key={i} value={w}>{w}</MenuItem>
@@ -259,7 +261,7 @@ const NewWeek = () => {
                                     "& .MuiFormLabel-root": {
                                         color: colors.greenAccent[400]
                                     },
-                                    width: 200,
+                                    width: isNonMobile ? 200 : 150,
                                     textAlign: 'center'
                                 }
                             }
@@ -272,11 +274,11 @@ const NewWeek = () => {
                         //justifyContent='center'
                         display='flex'
                         flexDirection='column'
-                        sx={{ minWidth: 400 }}
+                        sx={{ minWidth: isNonMobile ? 400 : '100%' }}
                     >
                         <Autocomplete
                             renderInput={(params) => (
-                                <TextField {...params} sx={{input: {textAlign: 'center'}}} label='Golfer'/>
+                                <TextField {...params} sx={{ input: { textAlign: 'center' } }} label='Golfer' />
                             )}
                             options={golferNames}
                             value={data.name}
@@ -298,7 +300,7 @@ const NewWeek = () => {
                                     "& .MuiFormLabel-root": {
                                         color: colors.greenAccent[400]
                                     },
-                                    width: 400
+                                    width: isNonMobile ? 400 : '100%'
                                 }
                             }
                         >
@@ -338,8 +340,8 @@ const NewWeek = () => {
                             min={30}
                             max={70}
                             defaultValue={[45]}
-                            onChange={e => {setData({...data, ['score']: e.target.value})}}
-                            sx={{color: colors.greenAccent[400], mt: '50px'}}
+                            onChange={e => { setData({ ...data, ['score']: e.target.value }) }}
+                            sx={{ color: colors.greenAccent[400], mt: '50px' }}
                         />
                     </Box>
 
@@ -351,10 +353,10 @@ const NewWeek = () => {
                         flexDirection='column'
                     >
 
-                        <Button 
-                            variant='contained' 
-                            endIcon={<AddIcon />} 
-                            sx={{minWidth: '250px'}} 
+                        <Button
+                            variant='contained'
+                            endIcon={<AddIcon />}
+                            sx={{ minWidth: '250px' }}
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleAddRow}
@@ -363,10 +365,10 @@ const NewWeek = () => {
                             Add
                         </Button>
 
-                        <Button 
-                            variant='contained' 
-                            endIcon={<DeleteIcon />} 
-                            sx={{minWidth: '250px', mt: '40px'}} 
+                        <Button
+                            variant='contained'
+                            endIcon={<DeleteIcon />}
+                            sx={{ minWidth: '250px', mt: '40px' }}
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleDialogOpen}
@@ -379,37 +381,39 @@ const NewWeek = () => {
 
                 <Box
                     mt='40px'
-                    ml='125px'
+                    ml={isNonMobile ? '125px' : '0px'}
                     alignItems='center'
                     justifyContent='space-evenly'
                     display='flex'
                     flexDirection='column'
-                    //maxWidth='400px'
-                    //width='85%'
-                > 
+                    width={isNonMobile ? 'auto' : '100%'}
+                >
                     <DataGrid
                         columns={columns}
                         rows={rows}
+                        autoHeight
                         hideFooter={true}
-                        initialState = {{
+                        initialState={{
                             sorting: {
-                                sortModel: [{field: 'name', sort: 'asc'}]
+                                sortModel: [{ field: 'name', sort: 'asc' }]
                             }
                         }}
                         //onRowDoubleClick={handleRowDoubleClick}
-                        sx = {{
-                            '& .MuiDataGrid-columnHeaders' : {
+                        sx={{
+                            '& .MuiDataGrid-columnHeaders': {
                                 color: `${colors.greenAccent[400]}`,
                                 fontWeight: 800
-                            }
+                            },
+                            width: '100%',
+                            minHeight: 300
                         }}
                     />
 
                     {data.rows.length ? (
-                        <Button 
-                            variant='contained' 
-                            endIcon={<AddIcon />} 
-                            sx={{minWidth: '250px'}} 
+                        <Button
+                            variant='contained'
+                            endIcon={<AddIcon />}
+                            sx={{ minWidth: '250px' }}
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleSubmit}
@@ -437,14 +441,14 @@ const NewWeek = () => {
                 <DialogActions>
                     <Button
                         onClick={handleDialogClose}
-                        sx={{color: colors.greenAccent[400]}}
+                        sx={{ color: colors.greenAccent[400] }}
                     >
                         No
                     </Button>
-                    <Button 
-                        onClick={handleRemoveWeek} 
+                    <Button
+                        onClick={handleRemoveWeek}
                         autoFocus
-                        sx={{color: colors.greenAccent[400]}}
+                        sx={{ color: colors.greenAccent[400] }}
                     >
                         Yes
                     </Button>
@@ -468,7 +472,7 @@ const NewWeek = () => {
 
                 <DialogActions>
                     <Button
-                        sx={{color: colors.greenAccent[400]}}
+                        sx={{ color: colors.greenAccent[400] }}
                         component={Link}
                         to='/league'
                         reloadDocument
@@ -480,7 +484,16 @@ const NewWeek = () => {
             </Dialog>
 
             <Dialog
-                open={data.auth === 'suckwithpace' ? false : true}
+                open={false} //{data.auth === 'suckwithpace' ? false : true}
+                hideBackdrop={true}
+                disableEnforceFocus={true}
+                disableScrollLock={true}
+                sx={{
+                    "& .MuiDialog-container": {
+                        alignItems: "flex-start",
+                        paddingTop: "100px"
+                    }
+                }}
             >
                 <DialogTitle>
                     {"Hey!"}

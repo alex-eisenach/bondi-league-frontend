@@ -1,45 +1,46 @@
-import './App.css';
+import { useState } from 'react';
+import { ColorModeContext, useMode } from "./theme";
+import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
+import { Routes, Route } from "react-router-dom";
 
-import {useState}                   from 'react';
-import {ColorModeContext, useMode}  from "./theme";
-import {CssBaseline, ThemeProvider} from '@mui/material';
-import {Routes, Route}              from "react-router-dom";
-
-//import Topbar      from './scenes/global/topbar';
-import Sidebar     from './scenes/global/sidebar';
-import Dashboard   from './scenes/dashboard';
+import Topbar from './scenes/global/topbar';
+import Sidebar from './scenes/global/sidebar';
+import Dashboard from './scenes/dashboard';
 import Scorestable from './scenes/scorestable';
-import League      from './scenes/league';
-import Individual  from './scenes/individual';
-import NewWeek     from './scenes/newweek';
+import League from './scenes/league';
+import Individual from './scenes/individual';
+import NewWeek from './scenes/newweek';
 
 function App() {
 
     const [theme, colorMode] = useMode();
-    const [isSidebar, setIsSidebar] = useState(true);
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    const [isSidebarToggled, setIsSidebarToggled] = useState(false);
 
     console.log('Beginning the app...')
 
     const latestWeek = '15';
     const latestYear = '2023';
-        
+
     return (
         <ColorModeContext.Provider value={colorMode}>
             <ThemeProvider theme={theme}>
-                <CssBaseline/>
+                <CssBaseline />
                 <div className='app'>
-                    <Sidebar isSidebar={isSidebar}/>
+                    <Sidebar
+                        isToggled={isSidebarToggled}
+                        setIsToggled={setIsSidebarToggled}
+                    />
                     <main className='content'>
-                        {/* <Topbar setIsSidebar={setIsSidebar}/> */}
+                        <Topbar setIsSidebarToggled={setIsSidebarToggled} />
                         <Routes>
-                            <Route path='/'            element={<Dashboard />} />
-                            <Route path='/league'      element={<League  latestWeek={latestWeek} latestYear={latestYear}   />} />
-                            <Route path='/individual'  element={<Individual latestWeek={latestWeek} latestYear={latestYear}/>} />
+                            <Route path='/' element={<Dashboard />} />
+                            <Route path='/league' element={<League latestWeek={latestWeek} latestYear={latestYear} />} />
+                            <Route path='/individual' element={<Individual latestWeek={latestWeek} latestYear={latestYear} />} />
                             <Route path='/scorestable' element={<Scorestable />} />
-                            <Route path='/addScores'   element={<NewWeek    />} />
+                            <Route path='/addScores' element={<NewWeek />} />
                         </Routes>
                     </main>
-                    {/*<svg ref={svgRef}></svg>*/}
                 </div>
             </ThemeProvider>
         </ColorModeContext.Provider>
