@@ -45,8 +45,14 @@ export async function postUpdate(_data) {
   return response.json();
 }
 
-export async function getGolferStats(golfer) {
-  const url = `${API_URL}/gets/stats/${encodeURIComponent(golfer)}`;
+export async function getGolferStats(golfer, startYear, startWeek, endYear, endWeek) {
+  const params = new URLSearchParams();
+  if (startYear) params.append('startYear', startYear);
+  if (startWeek) params.append('startWeek', startWeek);
+  if (endYear) params.append('endYear', endYear);
+  if (endWeek) params.append('endWeek', endWeek);
+
+  const url = `${API_URL}/gets/stats/${encodeURIComponent(golfer)}?${params.toString()}`;
   const response = await fetch(url);
   return response.json();
 }
