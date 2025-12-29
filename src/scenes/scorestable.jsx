@@ -2,8 +2,9 @@ import { Box, Typography, useTheme, Select, MenuItem, InputLabel, FormControl } 
 import { useState, useEffect, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../theme';
-import { getMetadata, data as allDataFetch } from '../backend/hooks';
+import { getAllData } from '../backend/hooks';
 import { rangeWeeks, rangeYears, parseDateString } from '../data/data';
+import { useMetadata } from '../context/MetadataContext';
 import Header from '../components/header';
 
 const scoresComparator = (i, j) => {
@@ -23,27 +24,25 @@ const Scorestable = () => {
     const colors = tokens(theme.palette.mode);
     const action = useRef(null);
 
+    const { allWeeks, allYears, latestYear, latestWeek, loading } = useMetadata();
+
     const [startWeek, setStartWeek] = useState('1');
-    const [endWeek, setEndWeek] = useState('2');
+    const [endWeek, setEndWeek] = useState('');
     const [startYear, setStartYear] = useState('2022');
-    const [endYear, setEndYear] = useState('2023');
-    const [allWeeks, setAllWeeks] = useState([]);
-    const [allYears, setAllYears] = useState([]);
-    const [allNames, setAllNames] = useState([]);
+    const [endYear, setEndYear] = useState('');
     const [allData, setAllData] = useState([]);
 
     useEffect(() => {
-        getMetadata().then(meta => {
-            setAllWeeks(meta.weeks);
-            setAllYears(meta.years);
-            setAllNames(meta.names);
-            setStartYear(meta.latestYear);
-            setEndYear(meta.latestYear);
-            setStartWeek(meta.weeks[0] || '1');
-            setEndWeek(meta.latestWeek);
-        });
+        if (!loading) {
+            setStartYear(latestYear);
+            setEndYear(latestYear);
+            setStartWeek(allWeeks[0] || '1');
+            setEndWeek(latestWeek);
+        }
+    }, [loading, allWeeks, latestYear, latestWeek]);
 
-        allDataFetch.then(data => setAllData(data));
+    useEffect(() => {
+        getAllData().then(data => setAllData(data));
     }, []);
 
     const changeHandler = e => {
@@ -58,6 +57,7 @@ const Scorestable = () => {
         let rows = [];
         for (const obj of allData) {
             let params = {};
+            let hasRecord = false;
             for (const [key, val] of Object.entries(obj)) {
                 const parsedData = parseDateString(key);
                 if (parsedData) {
@@ -70,6 +70,9 @@ const Scorestable = () => {
                             .includes(year)
                     ) {
                         params[key] = val;
+                        if (val !== '' && val !== null) {
+                            hasRecord = true;
+                        }
                     }
                 }
                 else if (key === 'Names') {
@@ -79,7 +82,7 @@ const Scorestable = () => {
                     params['id'] = val;
                 }
             }
-            if (params) {
+            if (hasRecord) {
                 rows.push(params)
             }
         }
@@ -112,11 +115,11 @@ const Scorestable = () => {
 
     return (
         <Box
-            mt='25px'
-            ml='25px'
+            p='20px'
             textAlign='center'
-            alignItems='center'
-            sx={{ maxWidth: 'lg' }}
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', height: 'calc(100vh - 80px)' }}
         >
             <Header title='Master Spreadsheet' />
             <Box
@@ -168,7 +171,7 @@ const Scorestable = () => {
                         sx={{ minWidth: 125 }}
                         label='End Week'
                     >
-                        {allWeeks.map((week, i) => {
+                        {allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
                             if (parseInt(week) >= parseInt(startWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
@@ -230,14 +233,31 @@ const Scorestable = () => {
             </Box>
 
             <Box
-                sx={{ width: '1' }}
+                sx={{
+                    flex: 1,
+                    width: '1',
+                    '& .MuiDataGrid-cell[data-field="Names"]': {
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                        zIndex: 1,
+                        borderRight: `1px solid ${colors.grey[700]}`,
+                    },
+                    '& .MuiDataGrid-columnHeader[data-field="Names"]': {
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                        zIndex: 2,
+                        borderRight: `1px solid ${colors.grey[700]}`,
+                    },
+                }}
             >
                 <DataGrid
                     columns={columns()}
                     rows={rows()}
                     initialState={{
                         sorting: {
-                            sortModel: [{ field: 'Golfers', sort: 'asc' }]
+                            sortModel: [{ field: 'Names', sort: 'asc' }]
                         }
                     }}
                     sx={{

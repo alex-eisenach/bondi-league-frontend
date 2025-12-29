@@ -4,27 +4,35 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getMetadata, getGolferStats } from "../data/data";
+import { getGolferStats } from "../data/data";
+import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
 
-const Individual = (props) => {
+const Individual = () => {
 
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
+    const { allWeeks, allYears, allNames, latestWeek, latestYear, loading } = useMetadata();
+
     const [startWeek, setStartWeek] = useState('1');
-    const [endWeek, setEndWeek] = useState(props.latestWeek);
+    const [endWeek, setEndWeek] = useState('');
     const [startYear, setStartYear] = useState('2022');
-    const [endYear, setEndYear] = useState(props.latestYear);
+    const [endYear, setEndYear] = useState('');
     const [golfer, setGolfer] = useState('');
-    const [allWeeks, setAllWeeks] = useState([]);
-    const [allYears, setAllYears] = useState([]);
-    const [allNames, setAllNames] = useState([]);
     const [handicap, setHandicap] = useState(0.0);
     const [trend, setTrend] = useState(0.0);
     const [bestScore, setBestScore] = useState(0.0);
     const [avgScore, setAvgScore] = useState(0.0);
+
+    // Initial defaults when metadata loads
+    useEffect(() => {
+        if (!loading) {
+            setEndWeek(latestWeek);
+            setEndYear(latestYear);
+        }
+    }, [loading, latestWeek, latestYear]);
 
     function* tickCallbackTracker(_dates) {
         let yrTrack = null;
@@ -52,13 +60,6 @@ const Individual = (props) => {
         setGolfer(golfer);
     };
 
-    useEffect(() => {
-        getMetadata().then(meta => {
-            setAllWeeks(meta.weeks);
-            setAllYears(meta.years);
-            setAllNames(meta.names);
-        });
-    }, []);
 
     useEffect(() => {
         if (!allWeeks.length || !golfer) { return }
@@ -73,7 +74,8 @@ const Individual = (props) => {
             if (!stats || !stats.scores || stats.scores.length < 2) return;
 
             const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
-            const [trendIntercept, trendSlope] = _trend;
+            const intercept = Array.isArray(_trend[0]) ? _trend[0][0] : _trend[0];
+            const slope = Array.isArray(_trend[1]) ? _trend[1][0] : _trend[1];
 
             // Handle plot update
             const genYearTicks = tickCallbackTracker([...dates]);
@@ -83,10 +85,11 @@ const Individual = (props) => {
             }
 
             const trendX = [...Array(scores.length).keys()];
-            const trendY = trendX.map(x => x * trendSlope[0] + trendIntercept[0]);
+            const trendY = trendX.map(x => x * slope + intercept);
 
             const plot = Plot.plot({
-                width: isMobile ? (window.innerWidth - 60) : 1080, height: isMobile ? 300 : 400,
+                width: isMobile ? (window.innerWidth - 60) : (window.innerWidth - 320),
+                height: isMobile ? 300 : 500,
                 marginBottom: 60,
                 y: {
                     grid: true,
@@ -98,7 +101,6 @@ const Individual = (props) => {
                 marks: [
                     Plot.ruleY([Math.min(...scores) - 5]),
                     Plot.axisX({
-                        // Axis ticks for the Week
                         tickSize: 8,
                         tickPadding: -4,
                         tickFormat: (s, i) => {
@@ -110,10 +112,9 @@ const Individual = (props) => {
                         },
                         textAnchor: 'start',
                         fontSize: 10
-                        //sort: { order: null }
                     }),
                     Plot.axisX({
-                        x: yrTicks,
+                        ticks: yrTicks,
                         tickSize: 26,
                         tickPadding: -8,
                         tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
@@ -150,16 +151,16 @@ const Individual = (props) => {
                             x: dates,
                             y: scores,
                             dy: 15,
-                            text: (d, i) => `Net Score: ${(d - _handicap).toFixed(1)}`,
-                            fontSize: 12
+                            text: (d, i) => `Net Score: ${(scores[i] - _handicap).toFixed(1)}`,
+                            fontSize: 14
                         }),
                     ),
-                    Plot.lineX(
-                        trendY,
+                    Plot.line(
+                        scores,
                         {
                             x: dates,
                             y: trendY,
-                            stroke: trendSlope[0] > 0 ? colors.red[400] : colors.greenAccent[400],
+                            stroke: slope > 0 ? colors.red[400] : colors.greenAccent[400],
                             strokeDasharray: '8,8',
                         }
                     )
@@ -168,7 +169,7 @@ const Individual = (props) => {
             if (action.current) action.current.innerHTML = '';
             action.current.append(plot);
             setHandicap(_handicap);
-            setTrend(trendSlope[0]);
+            setTrend(slope);
             setBestScore(Math.min(...scores));
             setAvgScore(_avgScore);
 
@@ -176,16 +177,16 @@ const Individual = (props) => {
         });
 
     },
-        [data.golfer, data.endYear, data.endWeek, data.startYear, data.startWeek, isMobile]
+        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks]
     );
 
     return (
         <Box
-            mt='25px'
+            p='20px'
             textAlign='center'
-            alignItems='center'
-            justifyContent='center'
-            sx={{ maxWidth: 'xl' }}
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
         >
             <Header title='Individual Golfer' />
 
@@ -241,7 +242,7 @@ const Individual = (props) => {
                         name='endWeek'
                         onChange={changeHandler}
                         value={endWeek}
-                        valuesFunc={allWeeks.map((week, i) => {
+                        valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
                             if (parseInt(week) >= parseInt(startWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }

@@ -69,5 +69,7 @@ export async function getMetadata() {
   return response.json();
 }
 
-export const data = fetch(API_URL + "/gets/allData")
-  .then(response => response.json());
+export async function getAllData() {
+  const response = await fetch(API_URL + "/gets/allData");
+  return response.json();
+}

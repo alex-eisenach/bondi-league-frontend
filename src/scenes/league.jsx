@@ -1,4 +1,4 @@
-import { Box, MenuItem, Typography, useTheme } from '@mui/material';
+import { Box, MenuItem, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import * as Plot from '@observablehq/plot';
 
@@ -6,33 +6,33 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getMetadata, getLeagueStats } from "../data/data";
+import { getLeagueStats } from "../data/data";
+import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
 
-const League = (props) => {
+const League = () => {
 
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
+    const { allWeeks, allYears, yearsToWeeks, latestWeek, latestYear, loading } = useMetadata();
 
-    const [week, setWeek] = useState(props.latestWeek);
-    const [year, setYear] = useState(props.latestYear);
-    const [allWeeks, setAllWeeks] = useState([]);
-    const [allYears, setAllYears] = useState([]);
-    const [yearsToWeeks, setYearsToWeeks] = useState({});
+    const [week, setWeek] = useState('');
+    const [year, setYear] = useState('');
     const [flightMap, setFlightMap] = useState({});
     const [aWinner, setAWinner] = useState('?');
     const [bWinner, setBWinner] = useState('?');
     const [meanScore, setMeanScore] = useState('?');
     const [lowNet, setLowNet] = useState('?');
 
+    // Initial defaults when metadata loads
     useEffect(() => {
-        getMetadata().then(meta => {
-            setAllWeeks(meta.weeks);
-            setAllYears(meta.years);
-            setYearsToWeeks(meta.yearsToWeeks);
-        });
-    }, []);
+        if (!loading) {
+            setWeek(latestWeek);
+            setYear(latestYear);
+        }
+    }, [loading, latestWeek, latestYear]);
 
     useEffect(() => {
         if (!week || !year) return;
@@ -60,7 +60,8 @@ const League = (props) => {
             }
 
             const plot = Plot.plot({
-                width: 1260, height: 400,
+                width: isMobile ? (window.innerWidth - 60) : (window.innerWidth - 320),
+                height: 400,
                 marginBottom: 60,
                 axis: null,
                 grid: true,
@@ -137,11 +138,11 @@ const League = (props) => {
 
     return (
         <Box
-            mt='25px'
+            p='20px'
             textAlign='center'
-            alignItems='center'
-            justifyContent='center'
-            sx={{ maxWidth: 'xl' }}
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
         >
             <Header title='League Stats Per Week' />
 
@@ -178,7 +179,7 @@ const League = (props) => {
                     }}
                     valuesFunc={
                         (yearsToWeeks[year])
-                            ? yearsToWeeks[year].map((y, i) => {
+                            ? [...yearsToWeeks[year]].sort((a, b) => parseInt(b) - parseInt(a)).map((y, i) => {
                                 return <MenuItem key={i} value={y}>{y}</MenuItem>
                             })
                             : [<MenuItem key={0} value={week}>{week}</MenuItem>]
@@ -265,6 +266,7 @@ const League = (props) => {
                             }
                         }}
                         sx={{
+                            flex: 1,
                             '& .MuiDataGrid-columnHeaders': {
                                 color: `${colors.greenAccent[400]}`,
                                 fontWeight: 800
@@ -281,6 +283,8 @@ const League = (props) => {
                             }
                         }}
                         sx={{
+                            flex: 1,
+                            marginLeft: '10px',
                             '& .MuiDataGrid-columnHeaders': {
                                 color: `${colors.greenAccent[400]}`,
                                 fontWeight: 800

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { postNewGolfer, postRemoveWeek, postUpdate } from '../backend/hooks';
 import Header from '../components/header';
 import AppSelect from '../components/select';
-import { getMetadata } from "../data/data";
+import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
@@ -23,41 +23,32 @@ const NewWeek = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    const { allWeeks, allYears, allNames, yearsToWeeks, latestYear, latestWeek, loading } = useMetadata();
+
     const [week, setWeek] = useState('');
     const [year, setYear] = useState('');
     const [score, setScore] = useState('');
     const [name, setName] = useState('');
     const [rowsState, setRowsState] = useState([]);
-    const [allWeeks, setAllWeeks] = useState([]);
-    const [allYears, setAllYears] = useState([]);
-    const [allNames, setAllNames] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogSubmit, setDialogSubmit] = useState(false);
     const [auth, setAuth] = useState('');
-    const [yearsToWeeks, setYearsToWeeks] = useState({});
 
     const changeGolfer = golfer => { setName(golfer) }
     const incrStr = (str, incr = 1) => { return (parseInt(str) + incr).toString() };
 
     useEffect(() => {
-        getMetadata().then(meta => {
-            setAllWeeks(meta.weeks);
-            setAllYears(meta.years);
-            setAllNames(meta.names);
-            setYearsToWeeks(meta.yearsToWeeks);
-
+        if (!loading) {
             // Set defaults for new week (next week after latest)
-            const ly = meta.latestYear;
-            const lw = meta.latestWeek;
-            if (parseInt(lw) < 15) {
-                setYear(ly);
-                setWeek(incrStr(lw));
+            if (parseInt(latestWeek) < 15) {
+                setYear(latestYear);
+                setWeek(incrStr(latestWeek));
             } else {
-                setYear(incrStr(ly));
+                setYear(incrStr(latestYear));
                 setWeek('1');
             }
-        });
-    }, []);
+        }
+    }, [loading, latestYear, latestWeek]);
 
     const handleRemoveWeek = () => {
         console.log('Removing week: ', week);
@@ -205,7 +196,10 @@ const NewWeek = () => {
 
     return (
         <Box
-            m='20px'
+            p='20px'
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
         >
             <Header title='Add New Week' />
             <Box
@@ -389,6 +383,7 @@ const NewWeek = () => {
                     display='flex'
                     flexDirection='column'
                     width={isNonMobile ? 'auto' : '100%'}
+                    sx={{ flex: 1 }}
                 >
                     <DataGrid
                         columns={columns}
