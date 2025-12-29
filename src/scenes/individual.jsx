@@ -178,6 +178,7 @@ const Individual = (props) => {
                     )
                 ]
             });
+            if (action.current) action.current.innerHTML = '';
             action.current.append(plot);
             setData(
                 {

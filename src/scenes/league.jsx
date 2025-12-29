@@ -1,7 +1,7 @@
 import { Box, MenuItem, Typography, useTheme } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import * as Plot from '@observablehq/plot';
-import { mean } from 'mathjs';
+
 import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
@@ -50,22 +50,11 @@ const League = (props) => {
     useEffect(() => {
         if (!data.week || !data.year) return;
 
-        getLeagueStats(data.year, data.week).then(fd => {
-            if (!Object.keys(fd).length || !fd) return;
+        getLeagueStats(data.year, data.week).then(res => {
+            const { flightMap, summary } = res;
+            if (!flightMap || !summary || !Object.keys(flightMap).length) return;
 
-            let aWinner = [];
-            let bWinner = [];
-            let allScores = [];
-
-            for (const [golfer, golferObj] of Object.entries(fd)) {
-                if (golferObj.flight == 'A') { aWinner.push([golfer, golferObj.net]) }
-                if (golferObj.flight == 'B') { bWinner.push([golfer, golferObj.net]) }
-                allScores.push(golferObj.gross);
-            }
-
-            aWinner.sort((a, b) => a[1] - b[1]);
-            bWinner.sort((a, b) => a[1] - b[1]);
-            const [lowGolfer, lowNet] = (aWinner[0][1] < bWinner[0][1]) ? aWinner[0] : bWinner[0];
+            const fd = flightMap;
 
             let grossScores = [];
             Object.keys(fd).forEach(e => { grossScores.push(fd[e].gross) })
@@ -107,16 +96,17 @@ const League = (props) => {
                 ]
             });
 
+            if (action.current) action.current.innerHTML = '';
             action.current.append(plot);
 
             setData(
                 {
                     ...data,
                     'flightMap': fd,
-                    'aWinner': aWinner[0][0],
-                    'bWinner': bWinner[0][0],
-                    'meanScore': mean(allScores).toFixed(1),
-                    'lowNet': `${lowGolfer} (${lowNet.toFixed(2)})`,
+                    'aWinner': summary.aWinner,
+                    'bWinner': summary.bWinner,
+                    'meanScore': summary.meanScore,
+                    'lowNet': summary.lowNet,
                 }
             );
             return () => plot.remove();
