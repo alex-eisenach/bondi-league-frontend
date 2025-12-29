@@ -1,5 +1,5 @@
-import {handicap} from "./stats";
-import {data} from '../backend/hooks';
+import { data, getGolferStats, getLeagueStats } from '../backend/hooks';
+export { getGolferStats, getLeagueStats };
 
 const reDate = /(\d{4}) \w{2} (\d+)/;
 
@@ -15,63 +15,24 @@ export const allGolfers = async () => {
 
 export const parseDateString = (str) => {
     const regEx = reDate.exec(str);
-    if (regEx) { return regEx}
-    else       { return null }
+    if (regEx) { return regEx }
+    else { return null }
 }
 
 export const rangeWeeks = (weeks, start, end) => {
-    return weeks.slice(weeks.indexOf(start), weeks.indexOf(end)+1)
+    return weeks.slice(weeks.indexOf(start), weeks.indexOf(end) + 1)
 }
 
 export const rangeYears = (years, start, end) => {
-    return years.slice(years.indexOf(start), years.indexOf(end)+1)
+    return years.slice(years.indexOf(start), years.indexOf(end) + 1)
 }
 
 export const stringForDate = (year, week) => {
     const wkStr = (['2017', '2018', '2019', '2020'].includes(year)) ? 'WK' : 'Wk';
-    return `${year} ${wkStr} ${week}`;
+    return `${year} ${wkStr} ${week} `;
 }
 
-export const getFlightsForDate = (allData, year, week) => {
-    console.log(year, week);
-    let result = {};
-    let grossScores = {};
-    let handicaps = {};
-    let scores = [];
 
-    if (year == '2017' && week == '1') {return {}}
-
-    for (const obj of allData) {
-        let handicapScores = [];
-        // get all scores up to year/week for handicap calc
-        for (const [key, val] of Object.entries(obj)) {
-            if (key == stringForDate(year, week)) {
-                if (val) grossScores[obj['Names']] = val;
-            }
-            else if (parseDateString(key)) {
-                // else if doesn't include the current week's score in handicap calc
-                if (val) handicapScores.push(val);
-            }
-        }
-        handicaps[obj['Names']] = handicap(handicapScores);
-        if (grossScores[obj['Names']]) {
-            scores.push([obj['Names'], handicaps[obj['Names']]]);
-        }
-    }
-    scores.sort( (a,b) => a[1]-b[1] );
-    const midpoint = Math.ceil(scores.length / 2);
-
-    for (const i in scores) {
-        const name = scores[i][0];
-        result[name] = {
-            'flight'   : (i < midpoint) ? 'A' : 'B',
-            'gross'    : grossScores[name],
-            'net'      : grossScores[name] - handicaps[name],
-            'handicap' : handicaps[name]
-        }
-    }
-    return result;
-}
 
 export const weeksForYear = (allData, year) => {
     let allWeeks = new Set();
@@ -81,7 +42,7 @@ export const weeksForYear = (allData, year) => {
             const parsedData = parseDateString(date);
             if (parsedData) {
                 const [_, _year, _week] = parsedData;
-                if (year === _year) {allWeeks.add(_week)};
+                if (year === _year) { allWeeks.add(_week) };
             }
         }
     }
@@ -96,7 +57,7 @@ export const yearsForWeek = (allData, week) => {
             const parsedData = parseDateString(date);
             if (parsedData) {
                 const [_, _year, _week] = parsedData;
-                if (_week === week) {allYears.add(_year)}
+                if (_week === week) { allYears.add(_year) }
             }
         }
     }
@@ -105,13 +66,13 @@ export const yearsForWeek = (allData, week) => {
 
 export const getDatesForGolfer = async (golfer) => {
 
-    let allWeeks   = new Set();
-    let allYears   = new Set();
+    let allWeeks = new Set();
+    let allYears = new Set();
     let allStrings = new Set();
 
     const d = await data;
-    let dataFilt = d.filter( (d) => { return d['Names'] === golfer } )
-    if (dataFilt) {dataFilt = dataFilt[0]}
+    let dataFilt = d.filter((d) => { return d['Names'] === golfer })
+    if (dataFilt) { dataFilt = dataFilt[0] }
 
     for (const [key, _] of Object.entries(dataFilt)) {
 
@@ -126,30 +87,14 @@ export const getDatesForGolfer = async (golfer) => {
     return [allWeeks, allYears, allStrings];
 }
 
-export const getScoresForGolfer = async (golfer) => {
 
-    let scores = [];
-
-    const d = await data;
-    let dataFilt = d.filter( (d) => { return d['Names'] === golfer } )
-    if (dataFilt) {dataFilt = dataFilt[0]}
-
-    for (const [key, score] of Object.entries(dataFilt)) {
-        const parsedData = parseDateString(key);
-        if (parsedData) {
-            scores.push(score)
-        }
-    }
-    const _handicap = handicap(scores);
-    return [scores, _handicap];
-}
 
 export const getAllData = async () => {
 
-    let allWeeks   = new Set();
-    let allYears   = new Set();
+    let allWeeks = new Set();
+    let allYears = new Set();
     let allStrings = new Set();
-    let allNames   = new Set();
+    let allNames = new Set();
 
     const allData = await data;
 
@@ -158,8 +103,8 @@ export const getAllData = async () => {
         allNames.add(golfer['Names'])
         const [weeks, years, strings] = await getDatesForGolfer(golfer['Names']);
 
-        allWeeks   = allWeeks.union(weeks);
-        allYears   = allYears.union(years);
+        allWeeks = allWeeks.union(weeks);
+        allYears = allYears.union(years);
         allStrings = allStrings.union(strings);
     }
 
@@ -171,12 +116,12 @@ export const selectData = (
     allData,
     weeks,
     years,
-    skipMissing=true
+    skipMissing = true
 ) => {
 
     let scores = [];
-    let dates  = [];
-    const golferObj = allData.filter( i => i.Names === golfer)[0];
+    let dates = [];
+    const golferObj = allData.filter(i => i.Names === golfer)[0];
     for (const [key, val] of Object.entries(golferObj)) {
         // parse the str by splitting and looking at first/last entries
         const splitStr = key.split(' ');

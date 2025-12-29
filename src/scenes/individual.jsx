@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getAllData, rangeWeeks, rangeYears, selectData } from "../data/data";
-import { avgScore, handicap, trend } from '../data/stats';
+import { getAllData, getGolferStats, rangeWeeks, rangeYears, selectData } from "../data/data";
 import { tokens } from "../theme";
 
 const Individual = (props) => {
@@ -76,122 +75,122 @@ const Individual = (props) => {
     useEffect(() => {
 
         if (!data.allWeeks.length || !data.golfer) { return }
-        // On change of any input box data, reselect scores and dates
-        const [scores, dates] = selectData(
+        // Fetch enriched data from backend
+        getGolferStats(
             data.golfer,
-            data.allData,
-            rangeWeeks(data.allWeeks, data.startWeek, data.endWeek),
-            rangeYears(data.allYears, data.startYear, data.endYear)
-        );
-        if (scores.length < 2) { return }
+            data.startYear,
+            data.startWeek,
+            data.endYear,
+            data.endWeek
+        ).then(stats => {
+            if (!stats || !stats.scores || stats.scores.length < 2) return;
 
-        // Handle updates to golfer metrics
-        const _handicap = handicap(scores);
-        const [_, _trendSlope] = trend(scores);
+            const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
+            const [trendIntercept, trendSlope] = _trend;
 
-        // Handle plot update
-        const genYearTicks = tickCallbackTracker([...dates]);
-        let yrTicks = [];
-        for (const _date of genYearTicks) {
-            if (_date) { yrTicks.push(_date) }
-        }
+            // Handle plot update
+            const genYearTicks = tickCallbackTracker([...dates]);
+            let yrTicks = [];
+            for (const _date of genYearTicks) {
+                if (_date) { yrTicks.push(_date) }
+            }
 
-        const [trendIntercept, trendSlope] = trend(scores);
-        const trendX = [...Array(scores.length).keys()];
-        const trendY = trendX.map(x => x * trendSlope[0] + trendIntercept[0]);
+            const trendX = [...Array(scores.length).keys()];
+            const trendY = trendX.map(x => x * trendSlope[0] + trendIntercept[0]);
 
-        const plot = Plot.plot({
-            width: isMobile ? (window.innerWidth - 60) : 1080, height: isMobile ? 300 : 400,
-            marginBottom: 60,
-            y: {
-                grid: true,
-                domain: [Math.min(...scores) - 5, Math.max(...scores) + 5],
-            },
-            x: {
-                domain: dates
-            },
-            marks: [
-                Plot.ruleY([Math.min(...scores) - 5]),
-                Plot.axisX({
-                    // Axis ticks for the Week
-                    tickSize: 8,
-                    tickPadding: -4,
-                    tickFormat: (s, i) => {
-                        if (dates.length > 10) {
-                            return ` ${dates[i].split(' ')[2]}`;
-                        } else {
-                            return ` WK ${dates[i].split(' ')[2]}`;
-                        }
-                    },
-                    textAnchor: 'start',
-                    fontSize: 10
-                    //sort: { order: null }
-                }),
-                Plot.axisX({
-                    x: yrTicks,
-                    tickSize: 26,
-                    tickPadding: -8,
-                    tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
-                    textAnchor: 'start',
-                    fontSize: 12
-                }),
-                Plot.axisY({
-                    fontSize: 12
-                }),
-                Plot.gridX(),
-                Plot.dot(
-                    scores,
-                    {
-                        x: dates,
-                        y: scores,
-                        symbol: 'star',
-                        fill: colors.grey[100],
-                        r: 5
-                    }
-                ),
-                Plot.dot(
-                    scores,
-                    Plot.pointer({
-                        x: dates,
-                        y: scores,
-                        symbol: 'star',
-                        fill: colors.greenAccent[400],
-                        r: 8
+            const plot = Plot.plot({
+                width: isMobile ? (window.innerWidth - 60) : 1080, height: isMobile ? 300 : 400,
+                marginBottom: 60,
+                y: {
+                    grid: true,
+                    domain: [Math.min(...scores) - 5, Math.max(...scores) + 5],
+                },
+                x: {
+                    domain: dates
+                },
+                marks: [
+                    Plot.ruleY([Math.min(...scores) - 5]),
+                    Plot.axisX({
+                        // Axis ticks for the Week
+                        tickSize: 8,
+                        tickPadding: -4,
+                        tickFormat: (s, i) => {
+                            if (dates.length > 10) {
+                                return ` ${dates[i].split(' ')[2]}`;
+                            } else {
+                                return ` WK ${dates[i].split(' ')[2]}`;
+                            }
+                        },
+                        textAnchor: 'start',
+                        fontSize: 10
+                        //sort: { order: null }
                     }),
-                ),
-                Plot.text(
-                    scores,
-                    Plot.pointer({
-                        x: dates,
-                        y: scores,
-                        dy: 15,
-                        text: (d, i) => `Net Score: ${(d - _handicap).toFixed(1)}`,
+                    Plot.axisX({
+                        x: yrTicks,
+                        tickSize: 26,
+                        tickPadding: -8,
+                        tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
+                        textAnchor: 'start',
                         fontSize: 12
                     }),
-                ),
-                Plot.lineX(
-                    trendY,
-                    {
-                        x: dates,
-                        y: trendY,
-                        stroke: trendSlope[0] > 0 ? colors.red[400] : colors.greenAccent[400],
-                        strokeDasharray: '8,8',
-                    }
-                )
-            ]
-        });
-        action.current.append(plot);
-        setData(
-            {
-                ...data,
-                'handicap': _handicap.toFixed(1),
-                'trend': _trendSlope[0].toFixed(2),
-                'bestScore': Math.min(...scores),
-                'avgScore': avgScore(scores).toFixed(1)
-            }
-        );
+                    Plot.axisY({
+                        fontSize: 12
+                    }),
+                    Plot.gridX(),
+                    Plot.dot(
+                        scores,
+                        {
+                            x: dates,
+                            y: scores,
+                            symbol: 'star',
+                            fill: colors.grey[100],
+                            r: 5
+                        }
+                    ),
+                    Plot.dot(
+                        scores,
+                        Plot.pointer({
+                            x: dates,
+                            y: scores,
+                            symbol: 'star',
+                            fill: colors.greenAccent[400],
+                            r: 8
+                        }),
+                    ),
+                    Plot.text(
+                        scores,
+                        Plot.pointer({
+                            x: dates,
+                            y: scores,
+                            dy: 15,
+                            text: (d, i) => `Net Score: ${(d - _handicap).toFixed(1)}`,
+                            fontSize: 12
+                        }),
+                    ),
+                    Plot.lineX(
+                        trendY,
+                        {
+                            x: dates,
+                            y: trendY,
+                            stroke: trendSlope[0] > 0 ? colors.red[400] : colors.greenAccent[400],
+                            strokeDasharray: '8,8',
+                        }
+                    )
+                ]
+            });
+            action.current.append(plot);
+            setData(
+                {
+                    ...data,
+                    'handicap': _handicap.toFixed(1),
+                    'trend': trendSlope[0].toFixed(2),
+                    'bestScore': Math.min(...scores),
+                    'avgScore': _avgScore.toFixed(1)
+                }
+            );
 
-        return () => plot.remove();
+            return () => plot.remove();
+        });
 
     },
         [data.golfer, data.endYear, data.endWeek, data.startYear, data.startWeek, isMobile]

@@ -45,5 +45,17 @@ export async function postUpdate(_data) {
   return response.json();
 }
 
+export async function getGolferStats(golfer) {
+  const url = `${API_URL}/gets/stats/${encodeURIComponent(golfer)}`;
+  const response = await fetch(url);
+  return response.json();
+}
+
+export async function getLeagueStats(year, week) {
+  const url = `${API_URL}/gets/leagueStats/${year}/${week}`;
+  const response = await fetch(url);
+  return response.json();
+}
+
 export const data = fetch(API_URL + "/gets/allData")
   .then(response => response.json());
