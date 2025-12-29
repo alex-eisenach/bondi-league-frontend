@@ -4,32 +4,35 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
-import { getAllData, rangeWeeks, rangeYears, selectData } from "../data/data";
-import { avgScore, handicap, trend } from '../data/stats';
+import { getGolferStats } from "../data/data";
+import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
 
-const Individual = (props) => {
+const Individual = () => {
 
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
-    const [data, setData] = useState({
-        startWeek: '1',
-        endWeek: props.latestWeek,
-        startYear: '2022',
-        endYear: props.latestYear,
-        golfer: '',
-        allWeeks: [],
-        allYears: [],
-        allStrs: [],
-        allNames: [],
-        allData: [],
-        handicap: 0.0,
-        trend: 0.0,
-        bestScore: 0.0,
-        avgScore: 0.0
-    });
+    const { allWeeks, allYears, allNames, latestWeek, latestYear, loading } = useMetadata();
+
+    const [startWeek, setStartWeek] = useState('1');
+    const [endWeek, setEndWeek] = useState('');
+    const [startYear, setStartYear] = useState('2022');
+    const [endYear, setEndYear] = useState('');
+    const [golfer, setGolfer] = useState('');
+    const [handicap, setHandicap] = useState(0.0);
+    const [trend, setTrend] = useState(0.0);
+    const [bestScore, setBestScore] = useState(0.0);
+    const [avgScore, setAvgScore] = useState(0.0);
+
+    // Initial defaults when metadata loads
+    useEffect(() => {
+        if (!loading) {
+            setEndWeek(latestWeek);
+            setEndYear(latestYear);
+        }
+    }, [loading, latestWeek, latestYear]);
 
     function* tickCallbackTracker(_dates) {
         let yrTrack = null;
@@ -46,164 +49,144 @@ const Individual = (props) => {
     }
 
     const changeHandler = e => {
-        setData({ ...data, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'startWeek') setStartWeek(value);
+        if (name === 'endWeek') setEndWeek(value);
+        if (name === 'startYear') setStartYear(value);
+        if (name === 'endYear') setEndYear(value);
     };
 
     const changeGolfer = golfer => {
-        setData({ ...data, 'golfer': golfer });
+        setGolfer(golfer);
     };
 
-    const dataHandler = ((_allData) => {
-        const [weeks, years, strs, names, _data] = _allData;
-        setData({
-            ...data,
-            'allWeeks': [...weeks],
-            'allYears': [...years],
-            'allStrs': [...strs],
-            'allNames': [...names],
-            'allData': [..._data],
-        })
-    });
 
     useEffect(() => {
-        getAllData().then(
-            (d) => dataHandler(d)
-        );
-    },
-        []
-    );
+        if (!allWeeks.length || !golfer) { return }
 
-    useEffect(() => {
+        getGolferStats(
+            golfer,
+            startYear,
+            startWeek,
+            endYear,
+            endWeek
+        ).then(stats => {
+            if (!stats || !stats.scores || stats.scores.length < 2) return;
 
-        if (!data.allWeeks.length || !data.golfer) { return }
-        // On change of any input box data, reselect scores and dates
-        const [scores, dates] = selectData(
-            data.golfer,
-            data.allData,
-            rangeWeeks(data.allWeeks, data.startWeek, data.endWeek),
-            rangeYears(data.allYears, data.startYear, data.endYear)
-        );
-        if (scores.length < 2) { return }
+            const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
+            const intercept = Array.isArray(_trend[0]) ? _trend[0][0] : _trend[0];
+            const slope = Array.isArray(_trend[1]) ? _trend[1][0] : _trend[1];
 
-        // Handle updates to golfer metrics
-        const _handicap = handicap(scores);
-        const [_, _trendSlope] = trend(scores);
+            // Handle plot update
+            const genYearTicks = tickCallbackTracker([...dates]);
+            let yrTicks = [];
+            for (const _date of genYearTicks) {
+                if (_date) { yrTicks.push(_date) }
+            }
 
-        // Handle plot update
-        const genYearTicks = tickCallbackTracker([...dates]);
-        let yrTicks = [];
-        for (const _date of genYearTicks) {
-            if (_date) { yrTicks.push(_date) }
-        }
+            const trendX = [...Array(scores.length).keys()];
+            const trendY = trendX.map(x => x * slope + intercept);
 
-        const [trendIntercept, trendSlope] = trend(scores);
-        const trendX = [...Array(scores.length).keys()];
-        const trendY = trendX.map(x => x * trendSlope[0] + trendIntercept[0]);
-
-        const plot = Plot.plot({
-            width: isMobile ? (window.innerWidth - 60) : 1080, height: isMobile ? 300 : 400,
-            marginBottom: 60,
-            y: {
-                grid: true,
-                domain: [Math.min(...scores) - 5, Math.max(...scores) + 5],
-            },
-            x: {
-                domain: dates
-            },
-            marks: [
-                Plot.ruleY([Math.min(...scores) - 5]),
-                Plot.axisX({
-                    // Axis ticks for the Week
-                    tickSize: 8,
-                    tickPadding: -4,
-                    tickFormat: (s, i) => {
-                        if (dates.length > 10) {
-                            return ` ${dates[i].split(' ')[2]}`;
-                        } else {
-                            return ` WK ${dates[i].split(' ')[2]}`;
-                        }
-                    },
-                    textAnchor: 'start',
-                    fontSize: 10
-                    //sort: { order: null }
-                }),
-                Plot.axisX({
-                    x: yrTicks,
-                    tickSize: 26,
-                    tickPadding: -8,
-                    tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
-                    textAnchor: 'start',
-                    fontSize: 12
-                }),
-                Plot.axisY({
-                    fontSize: 12
-                }),
-                Plot.gridX(),
-                Plot.dot(
-                    scores,
-                    {
-                        x: dates,
-                        y: scores,
-                        symbol: 'star',
-                        fill: colors.grey[100],
-                        r: 5
-                    }
-                ),
-                Plot.dot(
-                    scores,
-                    Plot.pointer({
-                        x: dates,
-                        y: scores,
-                        symbol: 'star',
-                        fill: colors.greenAccent[400],
-                        r: 8
+            const plot = Plot.plot({
+                width: isMobile ? (window.innerWidth - 60) : (window.innerWidth - 320),
+                height: isMobile ? 300 : 500,
+                marginBottom: 60,
+                y: {
+                    grid: true,
+                    domain: [Math.min(...scores) - 5, Math.max(...scores) + 5],
+                },
+                x: {
+                    domain: dates
+                },
+                marks: [
+                    Plot.ruleY([Math.min(...scores) - 5]),
+                    Plot.axisX({
+                        tickSize: 8,
+                        tickPadding: -4,
+                        tickFormat: (s, i) => {
+                            if (dates.length > 10) {
+                                return ` ${dates[i].split(' ')[2]}`;
+                            } else {
+                                return ` WK ${dates[i].split(' ')[2]}`;
+                            }
+                        },
+                        textAnchor: 'start',
+                        fontSize: 10
                     }),
-                ),
-                Plot.text(
-                    scores,
-                    Plot.pointer({
-                        x: dates,
-                        y: scores,
-                        dy: 15,
-                        text: (d, i) => `Net Score: ${(d - _handicap).toFixed(1)}`,
+                    Plot.axisX({
+                        ticks: yrTicks,
+                        tickSize: 26,
+                        tickPadding: -8,
+                        tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
+                        textAnchor: 'start',
                         fontSize: 12
                     }),
-                ),
-                Plot.lineX(
-                    trendY,
-                    {
-                        x: dates,
-                        y: trendY,
-                        stroke: trendSlope[0] > 0 ? colors.red[400] : colors.greenAccent[400],
-                        strokeDasharray: '8,8',
-                    }
-                )
-            ]
-        });
-        action.current.append(plot);
-        setData(
-            {
-                ...data,
-                'handicap': _handicap.toFixed(1),
-                'trend': _trendSlope[0].toFixed(2),
-                'bestScore': Math.min(...scores),
-                'avgScore': avgScore(scores).toFixed(1)
-            }
-        );
+                    Plot.axisY({
+                        fontSize: 12
+                    }),
+                    Plot.gridX(),
+                    Plot.dot(
+                        scores,
+                        {
+                            x: dates,
+                            y: scores,
+                            symbol: 'star',
+                            fill: colors.grey[100],
+                            r: 5
+                        }
+                    ),
+                    Plot.dot(
+                        scores,
+                        Plot.pointer({
+                            x: dates,
+                            y: scores,
+                            symbol: 'star',
+                            fill: colors.greenAccent[400],
+                            r: 8
+                        }),
+                    ),
+                    Plot.text(
+                        scores,
+                        Plot.pointer({
+                            x: dates,
+                            y: scores,
+                            dy: 15,
+                            text: (d, i) => `Net Score: ${(scores[i] - _handicap).toFixed(1)}`,
+                            fontSize: 14
+                        }),
+                    ),
+                    Plot.line(
+                        scores,
+                        {
+                            x: dates,
+                            y: trendY,
+                            stroke: slope > 0 ? colors.red[400] : colors.greenAccent[400],
+                            strokeDasharray: '8,8',
+                        }
+                    )
+                ]
+            });
+            if (action.current) action.current.innerHTML = '';
+            action.current.append(plot);
+            setHandicap(_handicap);
+            setTrend(slope);
+            setBestScore(Math.min(...scores));
+            setAvgScore(_avgScore);
 
-        return () => plot.remove();
+            return () => plot.remove();
+        });
 
     },
-        [data.golfer, data.endYear, data.endWeek, data.startYear, data.startWeek, isMobile]
+        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks]
     );
 
     return (
         <Box
-            mt='25px'
+            p='20px'
             textAlign='center'
-            alignItems='center'
-            justifyContent='center'
-            sx={{ maxWidth: 'xl' }}
+            display="flex"
+            flexDirection="column"
+            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
         >
             <Header title='Individual Golfer' />
 
@@ -216,7 +199,7 @@ const Individual = (props) => {
                 <Autocomplete
                     renderInput={(params) =>
                         <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
-                    options={data.allNames.sort()}
+                    options={allNames}
                     //style={{color: colors.greenAccent[400], fontSize: 16}}
                     selectOnFocus={false}
                     autoHighlight
@@ -230,7 +213,7 @@ const Individual = (props) => {
                 </Autocomplete>
             </Box>
 
-            {data.golfer !== '' && (
+            {golfer !== '' && (
                 <Box
                     mt='50px'
                     justifyContent='center'
@@ -244,10 +227,10 @@ const Individual = (props) => {
                         placeholder='startWeek'
                         name='startWeek'
                         onChange={changeHandler}
-                        value={data.startWeek}
+                        value={startWeek}
                         valuesFunc={
-                            data.allWeeks.map((week, i) => {
-                                if (parseInt(week) <= parseInt(data.endWeek)) {
+                            allWeeks.map((week, i) => {
+                                if (parseInt(week) <= parseInt(endWeek)) {
                                     return <MenuItem key={i} value={week}>{week}</MenuItem>
                                 }
                             })
@@ -258,9 +241,9 @@ const Individual = (props) => {
                         placeholder='endWeek'
                         name='endWeek'
                         onChange={changeHandler}
-                        value={data.endWeek}
-                        valuesFunc={data.allWeeks.map((week, i) => {
-                            if (parseInt(week) >= parseInt(data.startWeek)) {
+                        value={endWeek}
+                        valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                            if (parseInt(week) >= parseInt(startWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
                         })}
@@ -270,9 +253,9 @@ const Individual = (props) => {
                         placeholder='startYear'
                         name='startYear'
                         onChange={changeHandler}
-                        value={data.startYear}
-                        valuesFunc={data.allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(data.endYear)) {
+                        value={startYear}
+                        valuesFunc={allYears.map((year, i) => {
+                            if (parseInt(year) <= parseInt(endYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         })}
@@ -282,9 +265,9 @@ const Individual = (props) => {
                         placeholder='endYear'
                         name='endYear'
                         onChange={changeHandler}
-                        value={data.endYear}
-                        valuesFunc={data.allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(data.startYear)) {
+                        value={endYear}
+                        valuesFunc={allYears.map((year, i) => {
+                            if (parseInt(year) >= parseInt(startYear)) {
                                 return <MenuItem key={i} value={year}>{year}</MenuItem>
                             }
                         })}
@@ -292,7 +275,7 @@ const Individual = (props) => {
                 </Box>
             )}
 
-            {data.golfer !== '' && (
+            {golfer !== '' && (
                 <Box
                     mt='15px'
                     //justifyContent='end'
@@ -317,20 +300,20 @@ const Individual = (props) => {
                     >
                         <StatBox
                             title='Avg Score'
-                            subtitle={`${data.avgScore}`}
+                            subtitle={`${avgScore.toFixed(1)}`}
                         />
                         <StatBox
                             title='Handicap'
-                            subtitle={`${data.handicap}`}
+                            subtitle={`${handicap.toFixed(1)}`}
                         />
                         <StatBox
                             title='Trend'
-                            subtitle={((data.trend > 0.0) ? "+" : "").concat(`${data.trend}`)}
-                            statColor={(data.trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
+                            subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
+                            statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
                         />
                         <StatBox
                             title='Best Score'
-                            subtitle={`${data.bestScore}`}
+                            subtitle={`${bestScore}`}
                         />
                     </Box>
                 </Box>

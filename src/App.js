@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ColorModeContext, useMode } from "./theme";
 import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import { Routes, Route } from "react-router-dom";
 
+import { MetadataProvider } from './context/MetadataContext';
 import Topbar from './scenes/global/topbar';
 import Sidebar from './scenes/global/sidebar';
 import Dashboard from './scenes/dashboard';
@@ -19,29 +20,28 @@ function App() {
 
     console.log('Beginning the app...')
 
-    const latestWeek = '15';
-    const latestYear = '2023';
-
     return (
         <ColorModeContext.Provider value={colorMode}>
             <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <div className='app'>
-                    <Sidebar
-                        isToggled={isSidebarToggled}
-                        setIsToggled={setIsSidebarToggled}
-                    />
-                    <main className='content'>
-                        <Topbar setIsSidebarToggled={setIsSidebarToggled} />
-                        <Routes>
-                            <Route path='/' element={<Dashboard />} />
-                            <Route path='/league' element={<League latestWeek={latestWeek} latestYear={latestYear} />} />
-                            <Route path='/individual' element={<Individual latestWeek={latestWeek} latestYear={latestYear} />} />
-                            <Route path='/scorestable' element={<Scorestable />} />
-                            <Route path='/addScores' element={<NewWeek />} />
-                        </Routes>
-                    </main>
-                </div>
+                <MetadataProvider>
+                    <CssBaseline />
+                    <div className='app'>
+                        <Sidebar
+                            isToggled={isSidebarToggled}
+                            setIsToggled={setIsSidebarToggled}
+                        />
+                        <main className='content'>
+                            <Topbar setIsSidebarToggled={setIsSidebarToggled} />
+                            <Routes>
+                                <Route path='/' element={<Dashboard />} />
+                                <Route path='/league' element={<League />} />
+                                <Route path='/individual' element={<Individual />} />
+                                <Route path='/scorestable' element={<Scorestable />} />
+                                <Route path='/addScores' element={<NewWeek />} />
+                            </Routes>
+                        </main>
+                    </div>
+                </MetadataProvider>
             </ThemeProvider>
         </ColorModeContext.Provider>
     )
