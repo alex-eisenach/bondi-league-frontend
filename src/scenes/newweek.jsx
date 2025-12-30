@@ -60,12 +60,25 @@ const NewWeek = () => {
         }
     }, [loading, latestYear, latestWeek]);
 
-    const handleRemoveWeek = () => {
+    const performRemoveWeek = () => {
         console.log('Removing week: ', week);
         const removeStr = `${year} Wk ${week}`;
-        postRemoveWeek({ key: removeStr }).then((d) => { console.log('Response: ', d) });
+        postRemoveWeek({ key: removeStr }).then((d) => {
+            console.log('Response: ', d);
+            // Optionally redirect after deletion
+            window.location.href = '/#/league';
+            window.location.reload();
+        });
+    };
+
+    const handleRemoveWeek = () => {
         setDialogOpen(false);
-        return null;
+        if (auth !== 'suckwithpace') {
+            setPendingAction(() => performRemoveWeek);
+            setAuthDialogOpen(true);
+            return;
+        }
+        performRemoveWeek();
     };
 
     const handleDialogClose = () => {
@@ -515,30 +528,53 @@ const NewWeek = () => {
             <Dialog
                 open={dialogOpen}
                 onClose={handleDialogClose}
+                PaperProps={{
+                    sx: {
+                        bgcolor: colors.primary[400],
+                        backgroundImage: 'none',
+                        borderRadius: "12px",
+                        padding: "10px"
+                    }
+                }}
             >
-                <DialogTitle>
-                    {"Hey!"}
+                <DialogTitle sx={{ color: colors.red[500], fontWeight: 'bold', fontSize: "1.5rem" }}>
+                    Confirm Deletion
                 </DialogTitle>
 
                 <DialogContent>
-                    <DialogContentText>
-                        Do you really want to remove the current year/week?
+                    <DialogContentText sx={{ color: colors.grey[100], fontSize: "1.1rem" }}>
+                        You are about to delete the entire week of <strong>{week}</strong> from Year <strong>{year}</strong> and this cannot be undone. Are you sure you want to proceed?
                     </DialogContentText>
                 </DialogContent>
 
-                <DialogActions>
+                <DialogActions sx={{ p: '20px' }}>
                     <Button
                         onClick={handleDialogClose}
-                        sx={{ color: colors.greenAccent[400] }}
+                        sx={{
+                            color: colors.grey[100],
+                            fontSize: "1rem",
+                            px: 3,
+                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+                        }}
                     >
-                        No
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleRemoveWeek}
                         autoFocus
-                        sx={{ color: colors.greenAccent[400] }}
+                        variant="contained"
+                        sx={{
+                            bgcolor: colors.red[600],
+                            color: colors.grey[100],
+                            fontSize: "1rem",
+                            px: 3,
+                            borderRadius: "8px",
+                            '&:hover': {
+                                bgcolor: colors.red[700]
+                            }
+                        }}
                     >
-                        Yes
+                        Proceed
                     </Button>
                 </DialogActions>
 
@@ -583,14 +619,23 @@ const NewWeek = () => {
                         paddingTop: "100px"
                     }
                 }}
+                PaperProps={{
+                    sx: {
+                        bgcolor: colors.primary[400],
+                        backgroundImage: 'none',
+                        borderRadius: "12px",
+                        padding: "10px",
+                        minWidth: "400px"
+                    }
+                }}
             >
-                <DialogTitle>
-                    {"Admin Access Required"}
+                <DialogTitle sx={{ color: colors.greenAccent[500], fontWeight: 'bold', fontSize: "1.5rem" }}>
+                    {"I'm going to need to see some ID"}
                 </DialogTitle>
 
                 <DialogContent>
-                    <DialogContentText>
-                        Type in the secret password to add scores...
+                    <DialogContentText sx={{ color: colors.grey[100], fontSize: "1.1rem", mb: 2 }}>
+                        Type in the secret password to proceed...
                     </DialogContentText>
                     <TextField
                         autoFocus
@@ -601,16 +646,34 @@ const NewWeek = () => {
                         label='Password'
                         type='password'
                         fullWidth
-                        variant='standard'
+                        variant='outlined'
                         value={auth}
                         onChange={handleAuth}
+                        sx={{
+                            "& .MuiOutlinedInput-root": {
+                                "& fieldset": { borderColor: colors.grey[100] },
+                                "&:hover fieldset": { borderColor: colors.greenAccent[400] },
+                                "&.Mui-focused fieldset": { borderColor: colors.greenAccent[500] },
+                            },
+                            "& .MuiInputLabel-root": { color: colors.grey[100] },
+                            "& .MuiInputLabel-root.Mui-focused": { color: colors.greenAccent[500] },
+                            "& .MuiInputBase-input": { color: colors.grey[100] }
+                        }}
                     />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => {
-                        setAuth('');
-                        setAuthDialogOpen(false);
-                    }} color="primary">
+                <DialogActions sx={{ p: '20px' }}>
+                    <Button
+                        onClick={() => {
+                            setAuth('');
+                            setAuthDialogOpen(false);
+                        }}
+                        sx={{
+                            color: colors.grey[100],
+                            fontSize: "1rem",
+                            px: 3,
+                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+                        }}
+                    >
                         Cancel
                     </Button>
                 </DialogActions>

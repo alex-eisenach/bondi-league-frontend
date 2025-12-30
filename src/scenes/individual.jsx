@@ -31,6 +31,7 @@ const Individual = () => {
         if (!loading) {
             setEndWeek(latestWeek);
             setEndYear(latestYear);
+            setStartYear(latestYear);
         }
     }, [loading, latestWeek, latestYear]);
 
