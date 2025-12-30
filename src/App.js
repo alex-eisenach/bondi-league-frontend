@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ColorModeContext, useMode } from "./theme";
 import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import { MetadataProvider } from './context/MetadataContext';
 import Topbar from './scenes/global/topbar';
@@ -38,6 +38,7 @@ function App() {
                                 <Route path='/individual' element={<Individual />} />
                                 <Route path='/scorestable' element={<Scorestable />} />
                                 <Route path='/addScores' element={<NewWeek />} />
+                                <Route path='*' element={<Navigate to="/" replace />} />
                             </Routes>
                         </main>
                     </div>

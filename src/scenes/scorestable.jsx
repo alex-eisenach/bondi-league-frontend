@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Box, Typography, useTheme, Select, MenuItem, InputLabel, FormControl, useMediaQuery } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../theme';
@@ -23,6 +23,7 @@ const Scorestable = () => {
 
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const action = useRef(null);
 
     const { allWeeks, allYears, latestYear, latestWeek, loading } = useMetadata();
@@ -116,11 +117,16 @@ const Scorestable = () => {
 
     return (
         <Box
-            p='20px'
+            p={isMobile ? '10px' : '20px'}
             textAlign='center'
             display="flex"
             flexDirection="column"
-            sx={{ width: '100%', height: 'calc(100vh - 80px)' }}
+            sx={{
+                width: '100%',
+                height: 'calc(100vh - 80px)',
+                overflowX: 'auto',
+                '& > *': { minWidth: 'fit-content' }
+            }}
         >
             <Header title='Master Spreadsheet' />
             <Box
