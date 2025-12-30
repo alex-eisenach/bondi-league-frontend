@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
+import LoadingScreen from '../components/LoadingScreen';
 import { getGolferStats } from "../data/data";
 import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
@@ -178,7 +179,7 @@ const Individual = () => {
         });
 
     },
-        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks]
+        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks, colors.greenAccent, colors.grey, colors.red]
     );
 
     return (
@@ -196,136 +197,143 @@ const Individual = () => {
         >
             <Header title='Individual Golfer' />
 
-            <Box
-                mt='20px'
-                alignItems='center'
-                justifyContent='center'
-                display='flex'
-            >
-                <Autocomplete
-                    renderInput={(params) =>
-                        <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
-                    options={allNames}
-                    //style={{color: colors.greenAccent[400], fontSize: 16}}
-                    selectOnFocus={false}
-                    autoHighlight
-                    autoComplete
-                    blurOnSelect
-                    onChange={(_, value, __) => changeGolfer(value)}
-                    sx={{
-                        width: 250
-                    }}
-                >
-                </Autocomplete>
-            </Box>
-
-            {golfer !== '' && (
-                <Box
-                    mt='50px'
-                    justifyContent='center'
-                    alignItems='center'
-                    display='flex'
-                    flexWrap='wrap'
-                >
-
-                    <AppSelect
-                        label="Start Week"
-                        placeholder='startWeek'
-                        name='startWeek'
-                        onChange={changeHandler}
-                        value={startWeek}
-                        valuesFunc={
-                            allWeeks.map((week, i) => {
-                                if (parseInt(week) <= parseInt(endWeek)) {
-                                    return <MenuItem key={i} value={week}>{week}</MenuItem>
-                                }
-                            })
-                        }
-                    />
-                    <AppSelect
-                        label="End Week"
-                        placeholder='endWeek'
-                        name='endWeek'
-                        onChange={changeHandler}
-                        value={endWeek}
-                        valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
-                            if (parseInt(week) >= parseInt(startWeek)) {
-                                return <MenuItem key={i} value={week}>{week}</MenuItem>
-                            }
-                        })}
-                    />
-                    <AppSelect
-                        label="Start Year"
-                        placeholder='startYear'
-                        name='startYear'
-                        onChange={changeHandler}
-                        value={startYear}
-                        valuesFunc={allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(endYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
-                        })}
-                    />
-                    <AppSelect
-                        label="End Year"
-                        placeholder='endYear'
-                        name='endYear'
-                        onChange={changeHandler}
-                        value={endYear}
-                        valuesFunc={allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(startYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
-                        })}
-                    />
-                </Box>
-            )}
-
-            {golfer !== '' && (
-                <Box
-                    mt='15px'
-                    //justifyContent='end'
-                    alignItems='center'
-                    display='flex'
-                    flexDirection={isMobile ? 'column' : 'row'}
-                    padding='10px 0'
-                    ml={isMobile ? '0' : '20px'}
-                >
-
-                    <Box width={isMobile ? '100%' : 'auto'}>
-                        <div ref={action} />
-                    </Box>
-
+            {loading ? (
+                <LoadingScreen />
+            ) : (
+                <>
                     <Box
+                        mt='20px'
+                        alignItems='center'
+                        justifyContent='center'
                         display='flex'
-                        flexDirection={isMobile ? 'row' : 'column'}
-                        justifyContent='space-evenly'
-                        mb='25px'
-                        width={isMobile ? '100%' : 'auto'}
-                        flexWrap={isMobile ? 'wrap' : 'nowrap'}
                     >
-                        <StatBox
-                            title='Avg Score'
-                            subtitle={`${avgScore.toFixed(1)}`}
-                        />
-                        <StatBox
-                            title='Handicap'
-                            subtitle={`${handicap.toFixed(1)}`}
-                        />
-                        <StatBox
-                            title='Trend'
-                            subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
-                            statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
-                        />
-                        <StatBox
-                            title='Best Score'
-                            subtitle={`${bestScore}`}
+                        <Autocomplete
+                            renderInput={(params) =>
+                                <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
+                            options={allNames}
+                            selectOnFocus={false}
+                            autoHighlight
+                            autoComplete
+                            blurOnSelect
+                            onChange={(_, value) => changeGolfer(value)}
+                            sx={{
+                                width: 250
+                            }}
                         />
                     </Box>
-                </Box>
+
+                    {golfer !== '' && (
+                        <Box
+                            mt='50px'
+                            justifyContent='center'
+                            alignItems='center'
+                            display='flex'
+                            flexWrap='wrap'
+                        >
+
+                            <AppSelect
+                                label="Start Week"
+                                placeholder='startWeek'
+                                name='startWeek'
+                                onChange={changeHandler}
+                                value={startWeek}
+                                valuesFunc={
+                                    allWeeks.map((week, i) => {
+                                        if (parseInt(week) <= parseInt(endWeek)) {
+                                            return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                        }
+                                        return null;
+                                    })
+                                }
+                            />
+                            <AppSelect
+                                label="End Week"
+                                placeholder='endWeek'
+                                name='endWeek'
+                                onChange={changeHandler}
+                                value={endWeek}
+                                valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                                    if (parseInt(week) >= parseInt(startWeek)) {
+                                        return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                            <AppSelect
+                                label="Start Year"
+                                placeholder='startYear'
+                                name='startYear'
+                                onChange={changeHandler}
+                                value={startYear}
+                                valuesFunc={allYears.map((year, i) => {
+                                    if (parseInt(year) <= parseInt(endYear)) {
+                                        return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                            <AppSelect
+                                label="End Year"
+                                placeholder='endYear'
+                                name='endYear'
+                                onChange={changeHandler}
+                                value={endYear}
+                                valuesFunc={allYears.map((year, i) => {
+                                    if (parseInt(year) >= parseInt(startYear)) {
+                                        return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                        </Box>
+                    )}
+
+                    {golfer !== '' && (
+                        <Box
+                            mt='15px'
+                            alignItems='center'
+                            display='flex'
+                            flexDirection={isMobile ? 'column' : 'row'}
+                            padding='10px 0'
+                            ml={isMobile ? '0' : '20px'}
+                        >
+
+                            <Box width={isMobile ? '100%' : 'auto'}>
+                                <div ref={action} />
+                            </Box>
+
+                            <Box
+                                display='flex'
+                                flexDirection={isMobile ? 'row' : 'column'}
+                                justifyContent='space-evenly'
+                                mb='25px'
+                                width={isMobile ? '100%' : 'auto'}
+                                flexWrap={isMobile ? 'wrap' : 'nowrap'}
+                            >
+                                <StatBox
+                                    title='Avg Score'
+                                    subtitle={`${avgScore.toFixed(1)}`}
+                                />
+                                <StatBox
+                                    title='Handicap'
+                                    subtitle={`${handicap.toFixed(1)}`}
+                                />
+                                <StatBox
+                                    title='Trend'
+                                    subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
+                                    statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
+                                />
+                                <StatBox
+                                    title='Best Score'
+                                    subtitle={`${bestScore}`}
+                                />
+                            </Box>
+                        </Box>
+                    )}
+                </>
             )}
         </Box>
-    )
+    );
 };
 
 export default Individual;

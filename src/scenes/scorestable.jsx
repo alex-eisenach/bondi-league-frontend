@@ -1,5 +1,5 @@
-import { Box, Typography, useTheme, Select, MenuItem, InputLabel, FormControl, useMediaQuery } from '@mui/material';
-import { useState, useEffect, useRef } from 'react';
+import { Box, MenuItem, useTheme, useMediaQuery } from '@mui/material';
+import { useState, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../theme';
 import { getAllData } from '../backend/hooks';
@@ -7,6 +7,7 @@ import AppSelect from '../components/select';
 import { rangeWeeks, rangeYears, parseDateString } from '../data/data';
 import { useMetadata } from '../context/MetadataContext';
 import Header from '../components/header';
+import LoadingScreen from '../components/LoadingScreen';
 
 const scoresComparator = (i, j) => {
     // Sorts a list of numbers containing empty strings to put empty strings at back
@@ -24,7 +25,6 @@ const Scorestable = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-    const action = useRef(null);
 
     const { allWeeks, allYears, latestYear, latestWeek, loading } = useMetadata();
 
@@ -111,7 +111,6 @@ const Scorestable = () => {
                     sortComparator: scoresComparator
                 })
         }
-        //console.log(columns);
         return columns;
     }
 
@@ -129,111 +128,117 @@ const Scorestable = () => {
             }}
         >
             <Header title='Master Spreadsheet' />
-            <Box
-                mt='25px'
-                justifyContent='center'
-                alignItems='center'
-                display='flex'
-                flexWrap='wrap'
-                padding='10px 0'
-                gap='20px'
-            >
-                <AppSelect
-                    label="Start Week"
-                    placeholder='startWeek'
-                    name='startWeek'
-                    onChange={changeHandler}
-                    value={startWeek}
-                    valuesFunc={
-                        allWeeks.map((week, i) => {
-                            if (parseInt(week) <= parseInt(endWeek)) {
-                                return <MenuItem key={i} value={week}>{week}</MenuItem>
+
+            {loading ? (
+                <LoadingScreen />
+            ) : (
+                <>
+                    <Box
+                        mt='25px'
+                        justifyContent='center'
+                        alignItems='center'
+                        display='flex'
+                        flexWrap='wrap'
+                        padding='10px 0'
+                        gap='20px'
+                    >
+                        <AppSelect
+                            label="Start Week"
+                            placeholder='startWeek'
+                            name='startWeek'
+                            onChange={changeHandler}
+                            value={startWeek}
+                            valuesFunc={
+                                allWeeks.map((week, i) => {
+                                    if (parseInt(week) <= parseInt(endWeek)) {
+                                        return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                    }
+                                    return null;
+                                })
                             }
-                        })
-                    }
-                />
+                        />
 
-                {/* ----- END WEEK ----- */}
-                <AppSelect
-                    label="End Week"
-                    placeholder='endWeek'
-                    name='endWeek'
-                    onChange={changeHandler}
-                    value={endWeek}
-                    valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
-                        if (parseInt(week) >= parseInt(startWeek)) {
-                            return <MenuItem key={i} value={week}>{week}</MenuItem>
-                        }
-                    })}
-                />
+                        <AppSelect
+                            label="End Week"
+                            placeholder='endWeek'
+                            name='endWeek'
+                            onChange={changeHandler}
+                            value={endWeek}
+                            valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                                if (parseInt(week) >= parseInt(startWeek)) {
+                                    return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                }
+                                return null;
+                            })}
+                        />
 
-                {/* ----- START YEAR ----- */}
-                <AppSelect
-                    label="Start Year"
-                    placeholder='startYear'
-                    name='startYear'
-                    onChange={changeHandler}
-                    value={startYear}
-                    valuesFunc={allYears.map((year, i) => {
-                        if (parseInt(year) <= parseInt(endYear)) {
-                            return <MenuItem key={i} value={year}>{year}</MenuItem>
-                        }
-                    })}
-                />
+                        <AppSelect
+                            label="Start Year"
+                            placeholder='startYear'
+                            name='startYear'
+                            onChange={changeHandler}
+                            value={startYear}
+                            valuesFunc={allYears.map((year, i) => {
+                                if (parseInt(year) <= parseInt(endYear)) {
+                                    return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                }
+                                return null;
+                            })}
+                        />
 
-                {/* ----- END YEAR ----- */}
-                <AppSelect
-                    label="End Year"
-                    placeholder='endYear'
-                    name='endYear'
-                    onChange={changeHandler}
-                    value={endYear}
-                    valuesFunc={allYears.slice().sort((a, b) => b - a).map((year, i) => {
-                        if (parseInt(year) >= parseInt(startYear)) {
-                            return <MenuItem key={i} value={year}>{year}</MenuItem>
-                        }
-                    })}
-                />
+                        <AppSelect
+                            label="End Year"
+                            placeholder='endYear'
+                            name='endYear'
+                            onChange={changeHandler}
+                            value={endYear}
+                            valuesFunc={allYears.slice().sort((a, b) => b - a).map((year, i) => {
+                                if (parseInt(year) >= parseInt(startYear)) {
+                                    return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                }
+                                return null;
+                            })}
+                        />
+                    </Box>
 
-            </Box>
-
-            <Box
-                sx={{
-                    flex: 1,
-                    width: '1',
-                    '& .MuiDataGrid-cell[data-field="Names"]': {
-                        position: 'sticky',
-                        left: 0,
-                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
-                        zIndex: 1,
-                        borderRight: `1px solid ${colors.grey[700]}`,
-                    },
-                    '& .MuiDataGrid-columnHeader[data-field="Names"]': {
-                        position: 'sticky',
-                        left: 0,
-                        backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
-                        zIndex: 2,
-                        borderRight: `1px solid ${colors.grey[700]}`,
-                    },
-                }}
-            >
-                <DataGrid
-                    columns={columns()}
-                    rows={rows()}
-                    initialState={{
-                        sorting: {
-                            sortModel: [{ field: 'Names', sort: 'asc' }]
-                        }
-                    }}
-                    sx={{
-                        '& .MuiDataGrid-columnHeaders': {
-                            color: `${colors.greenAccent[400]}`,
-                            fontWeight: 800
-                        }
-                    }}
-                />
-            </Box>
-
+                    <Box
+                        sx={{
+                            flex: 1,
+                            width: '1',
+                            '& .MuiDataGrid-cell[data-field="Names"]': {
+                                position: 'sticky',
+                                left: 0,
+                                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                                zIndex: 1,
+                                borderRight: `1px solid ${colors.grey[700]}`,
+                            },
+                            '& .MuiDataGrid-columnHeader[data-field="Names"]': {
+                                position: 'sticky',
+                                left: 0,
+                                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[400],
+                                zIndex: 2,
+                                borderRight: `1px solid ${colors.grey[700]}`,
+                            },
+                        }}
+                    >
+                        <DataGrid
+                            columns={columns()}
+                            rows={rows()}
+                            initialState={{
+                                sorting: {
+                                    sortModel: [{ field: 'Names', sort: 'asc' }]
+                                }
+                            }}
+                            sx={{
+                                '& .MuiDataGrid-columnHeaders': {
+                                    color: `${colors.greenAccent[400]}`,
+                                    fontWeight: 800
+                                }
+                            }}
+                        />
+                    </Box>
+                </>
+            )}
         </Box>
     );
 };

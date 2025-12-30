@@ -4,6 +4,7 @@ import { ColorModeContext } from "../../theme";
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import BackendStatus from '../../components/BackendStatus';
 
 const Topbar = ({ setIsSidebarToggled }) => {
     const theme = useTheme();
@@ -13,6 +14,7 @@ const Topbar = ({ setIsSidebarToggled }) => {
     return (
         <Box display='flex'
             justifyContent='space-between'
+            alignItems='center'
             p={2}
         >
             <Box display="flex">
@@ -25,7 +27,8 @@ const Topbar = ({ setIsSidebarToggled }) => {
                     </IconButton>
                 )}
             </Box>
-            <Box display='flex'>
+            <Box display='flex' alignItems='center' gap="15px">
+                {!isMobile && <BackendStatus />}
                 <IconButton onClick={colorMode.toggleColorMode}>
                     {theme.palette.mode === 'dark' ? (
                         <DarkModeOutlinedIcon />

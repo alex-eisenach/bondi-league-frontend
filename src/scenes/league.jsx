@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
+import LoadingScreen from '../components/LoadingScreen';
 import { getLeagueStats } from "../data/data";
 import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
@@ -136,7 +137,7 @@ const League = () => {
         setLowNet(lowNet.name !== '?' ? `${lowNet.name} (${lowNet.net.toFixed(2)})` : '?');
 
         return () => plot.remove();
-    }, [rawStats, excludedGolfers]);
+    }, [rawStats, excludedGolfers, colors.greenAccent, isMobile]);
 
 
     const rows = (flight) => {
@@ -211,203 +212,198 @@ const League = () => {
                 width: '100%',
                 minHeight: 'calc(100vh - 80px)',
                 overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' } // Ensures children don't get squashed below their content size
+                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='League Stats Per Week' />
 
-            <Box
-                mt='20px'
-                alignItems='center'
-                justifyContent='center'
-                display='flex'
-                flexWrap='wrap'
-                sx={{ gap: '10px' }}
-            >
-                <AppSelect
-                    label='Year'
-                    placeholder='year'
-                    name='year'
-                    onChange={e => changeYear(e.target.value)}
-                    value={year}
-                    sx={{
-                        width: 200
-                    }}
-                    valuesFunc={
-                        allYears.sort((a, b) => b - a).map((y, i) => {
-                            return <MenuItem key={i} value={y}>{y}</MenuItem>
-                        })
-                    }
-                />
-
-                <AppSelect
-                    label='Week'
-                    placeholder='week'
-                    name='week'
-                    onChange={e => changeWeek(e.target.value)}
-                    value={week}
-                    sx={{
-                        width: 200
-                    }}
-                    valuesFunc={
-                        (yearsToWeeks[year])
-                            ? [...yearsToWeeks[year]].sort((a, b) => parseInt(b) - parseInt(a)).map((y, i) => {
-                                return <MenuItem key={i} value={y}>{y}</MenuItem>
-                            })
-                            : [<MenuItem key={0} value={week}>{week}</MenuItem>]
-                    }
-                />
-            </Box>
-
-            <Box
-                mt='40px'
-                justifyContent='center'
-                display='flex'
-                flexWrap='wrap'
-                gap='20px'
-            >
-                <StatBox title='Avg Score' subtitle={meanScore} />
-                <StatBox title='A Flight Winner' subtitle={aWinner} />
-                <StatBox title='B Flight Winner' subtitle={bWinner} />
-                <StatBox title='Low Net' subtitle={lowNet} />
-
-            </Box>
-
-            <Box
-                alignItems='center'
-                mt='40px'
-                display='flex'
-                flexDirection='column'
-                width='100%'
-            >
-                <Box width='100%' display='flex' justifyContent='center'>
-                    <div ref={action} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
-                </Box>
-
-                <Box
-                    display='flex'
-                    flexDirection={isMobile ? 'column' : 'row'}
-                    mt='20px'
-                    width='100%'
-                    gap='30px'
-                >
-                    {/* A FLIGHT COLUMN */}
-                    <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
-                        <Typography
-                            variant='h2'
-                            fontWeight='bold'
-                            padding='10px'
-                            sx={{
-                                border: 1,
-                                borderColor: colors.greenAccent[400],
-                                borderRadius: '5%',
-                                width: isMobile ? '80%' : '100%',
-                                textAlign: 'center',
-                                mb: '10px'
-                            }}
-                        >
-                            A Flight
-                        </Typography>
-                        <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
-                            <DataGrid
-                                columns={columns()}
-                                rows={rows('A')}
-                                hideFooter={true}
-                                initialState={{
-                                    sorting: {
-                                        sortModel: [{ field: 'Net Score', sort: 'asc' }]
-                                    }
-                                }}
-                                autoHeight
-                                sx={{
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        color: `${colors.greenAccent[400]}`,
-                                        fontWeight: 800
-                                    }
-                                }}
-                            />
-                        </Box>
-                    </Box>
-
-                    {/* B FLIGHT COLUMN */}
-                    <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
-                        <Typography
-                            variant='h2'
-                            fontWeight='bold'
-                            padding='10px'
-                            sx={{
-                                border: 1,
-                                borderColor: colors.greenAccent[400],
-                                borderRadius: '5%',
-                                width: isMobile ? '80%' : '100%',
-                                textAlign: 'center',
-                                mb: '10px'
-                            }}
-                        >
-                            B Flight
-                        </Typography>
-                        <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
-                            <DataGrid
-                                columns={columns(false)}
-                                rows={rows('B')}
-                                hideFooter={true}
-                                initialState={{
-                                    sorting: {
-                                        sortModel: [{ field: 'Net Score', sort: 'asc' }]
-                                    }
-                                }}
-                                autoHeight
-                                sx={{
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        color: `${colors.greenAccent[400]}`,
-                                        fontWeight: 800
-                                    }
-                                }}
-                            />
-                        </Box>
-                    </Box>
-                </Box>
-
-                {/* NOT IN LEAGUE SECTION */}
-                <Box mt='40px' width='100%' display='flex' flexDirection='column' alignItems='center' gap='10px'>
-                    <Typography
-                        variant='h2'
-                        fontWeight='bold'
-                        padding='10px'
-                        sx={{
-                            border: 1,
-                            borderColor: colors.red[500],
-                            borderRadius: '5%',
-                            width: isMobile ? '80%' : '50%',
-                            textAlign: 'center',
-                            mb: '10px'
-                        }}
+            {loading ? (
+                <LoadingScreen />
+            ) : (
+                <>
+                    <Box
+                        mt='20px'
+                        alignItems='center'
+                        justifyContent='center'
+                        display='flex'
+                        flexWrap='wrap'
+                        sx={{ gap: '10px' }}
                     >
-                        Not In League
-                    </Typography>
-                    <Box width={isMobile ? '100%' : '80%'} sx={{ minWidth: 0, overflow: 'auto' }}>
-                        <DataGrid
-                            columns={columns(true)}
-                            rows={rows('Excluded')}
-                            hideFooter={true}
-                            initialState={{
-                                sorting: {
-                                    sortModel: [{ field: 'Net Score', sort: 'asc' }]
-                                }
-                            }}
-                            autoHeight
-                            sx={{
-                                '& .MuiDataGrid-columnHeaders': {
-                                    color: `${colors.red[500]}`,
-                                    fontWeight: 800
-                                }
-                            }}
+                        <AppSelect
+                            label='Year'
+                            placeholder='year'
+                            name='year'
+                            onChange={e => changeYear(e.target.value)}
+                            value={year}
+                            sx={{ width: 200 }}
+                            valuesFunc={allYears.sort((a, b) => b - a).map((y, i) => (
+                                <MenuItem key={i} value={y}>{y}</MenuItem>
+                            ))}
+                        />
+
+                        <AppSelect
+                            label='Week'
+                            placeholder='week'
+                            name='week'
+                            onChange={e => changeWeek(e.target.value)}
+                            value={week}
+                            sx={{ width: 200 }}
+                            valuesFunc={yearsToWeeks[year]
+                                ? [...yearsToWeeks[year]].sort((a, b) => parseInt(b) - parseInt(a)).map((y, i) => (
+                                    <MenuItem key={i} value={y}>{y}</MenuItem>
+                                ))
+                                : [<MenuItem key={0} value={week}>{week}</MenuItem>]
+                            }
                         />
                     </Box>
-                </Box>
-            </Box>
+
+                    <Box
+                        mt='40px'
+                        justifyContent='center'
+                        display='flex'
+                        flexWrap='wrap'
+                        gap='20px'
+                    >
+                        <StatBox title='Avg Score' subtitle={meanScore} />
+                        <StatBox title='A Flight Winner' subtitle={aWinner} />
+                        <StatBox title='B Flight Winner' subtitle={bWinner} />
+                        <StatBox title='Low Net' subtitle={lowNet} />
+                    </Box>
+
+                    <Box
+                        alignItems='center'
+                        mt='40px'
+                        display='flex'
+                        flexDirection='column'
+                        width='100%'
+                    >
+                        <Box width='100%' display='flex' justifyContent='center'>
+                            <div ref={action} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
+                        </Box>
+
+                        <Box
+                            display='flex'
+                            flexDirection={isMobile ? 'column' : 'row'}
+                            mt='20px'
+                            width='100%'
+                            gap='30px'
+                        >
+                            <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
+                                <Typography
+                                    variant='h2'
+                                    fontWeight='bold'
+                                    padding='10px'
+                                    sx={{
+                                        border: 1,
+                                        borderColor: colors.greenAccent[400],
+                                        borderRadius: '5%',
+                                        width: isMobile ? '80%' : '100%',
+                                        textAlign: 'center',
+                                        mb: '10px'
+                                    }}
+                                >
+                                    A Flight
+                                </Typography>
+                                <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
+                                    <DataGrid
+                                        columns={columns()}
+                                        rows={rows('A')}
+                                        hideFooter={true}
+                                        initialState={{
+                                            sorting: {
+                                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
+                                            }
+                                        }}
+                                        autoHeight
+                                        sx={{
+                                            '& .MuiDataGrid-columnHeaders': {
+                                                color: `${colors.greenAccent[400]}`,
+                                                fontWeight: 800
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+
+                            <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
+                                <Typography
+                                    variant='h2'
+                                    fontWeight='bold'
+                                    padding='10px'
+                                    sx={{
+                                        border: 1,
+                                        borderColor: colors.greenAccent[400],
+                                        borderRadius: '5%',
+                                        width: isMobile ? '80%' : '100%',
+                                        textAlign: 'center',
+                                        mb: '10px'
+                                    }}
+                                >
+                                    B Flight
+                                </Typography>
+                                <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
+                                    <DataGrid
+                                        columns={columns(false)}
+                                        rows={rows('B')}
+                                        hideFooter={true}
+                                        initialState={{
+                                            sorting: {
+                                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
+                                            }
+                                        }}
+                                        autoHeight
+                                        sx={{
+                                            '& .MuiDataGrid-columnHeaders': {
+                                                color: `${colors.greenAccent[400]}`,
+                                                fontWeight: 800
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+                        </Box>
+
+                        <Box mt='40px' width='100%' display='flex' flexDirection='column' alignItems='center' gap='10px'>
+                            <Typography
+                                variant='h2'
+                                fontWeight='bold'
+                                padding='10px'
+                                sx={{
+                                    border: 1,
+                                    borderColor: colors.red[500],
+                                    borderRadius: '5%',
+                                    width: isMobile ? '80%' : '50%',
+                                    textAlign: 'center',
+                                    mb: '10px'
+                                }}
+                            >
+                                Not In League
+                            </Typography>
+                            <Box width={isMobile ? '100%' : '80%'} sx={{ minWidth: 0, overflow: 'auto' }}>
+                                <DataGrid
+                                    columns={columns(true)}
+                                    rows={rows('Excluded')}
+                                    hideFooter={true}
+                                    initialState={{
+                                        sorting: {
+                                            sortModel: [{ field: 'Net Score', sort: 'asc' }]
+                                        }
+                                    }}
+                                    autoHeight
+                                    sx={{
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            color: `${colors.red[500]}`,
+                                            fontWeight: 800
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        </Box>
+                    </Box>
+                </>
+            )}
         </Box>
-    )
-}
+    );
+};
 
 export default League;
