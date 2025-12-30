@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../theme';
 import { getAllData } from '../backend/hooks';
+import AppSelect from '../components/select';
 import { rangeWeeks, rangeYears, parseDateString } from '../data/data';
 import { useMetadata } from '../context/MetadataContext';
 import Header from '../components/header';
@@ -124,111 +125,69 @@ const Scorestable = () => {
             <Header title='Master Spreadsheet' />
             <Box
                 mt='25px'
-                justifyContent='space-evenly'
+                justifyContent='center'
                 alignItems='center'
                 display='flex'
+                flexWrap='wrap'
                 padding='10px 0'
+                gap='20px'
             >
-                <FormControl>
-                    <InputLabel
-                        style={{ color: colors.greenAccent[400], fontSize: 16 }}
-                    >
-                        Start Week
-                    </InputLabel>
-
-                    {/* ----- START WEEK ----- */}
-                    <Select
-                        action={action}
-                        value={startWeek}
-                        placeholder='startWeek'
-                        onChange={changeHandler}
-                        name='startWeek'
-                        sx={{ minWidth: 125 }}
-                        label='Start Week'
-                    >
-                        {allWeeks.map((week, i) => {
+                <AppSelect
+                    label="Start Week"
+                    placeholder='startWeek'
+                    name='startWeek'
+                    onChange={changeHandler}
+                    value={startWeek}
+                    valuesFunc={
+                        allWeeks.map((week, i) => {
                             if (parseInt(week) <= parseInt(endWeek)) {
                                 return <MenuItem key={i} value={week}>{week}</MenuItem>
                             }
                         })
-                        }
-                    </Select>
-                </FormControl>
+                    }
+                />
 
                 {/* ----- END WEEK ----- */}
-                <FormControl>
-                    <InputLabel
-                        style={{ color: colors.greenAccent[400], fontSize: 16 }}
-                    >
-                        End Week
-                    </InputLabel>
-                    <Select
-                        action={action}
-                        value={endWeek}
-                        placeholder='endWeek'
-                        onChange={changeHandler}
-                        name='endWeek'
-                        sx={{ minWidth: 125 }}
-                        label='End Week'
-                    >
-                        {allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
-                            if (parseInt(week) >= parseInt(startWeek)) {
-                                return <MenuItem key={i} value={week}>{week}</MenuItem>
-                            }
+                <AppSelect
+                    label="End Week"
+                    placeholder='endWeek'
+                    name='endWeek'
+                    onChange={changeHandler}
+                    value={endWeek}
+                    valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                        if (parseInt(week) >= parseInt(startWeek)) {
+                            return <MenuItem key={i} value={week}>{week}</MenuItem>
                         }
-                        )}
-                    </Select>
-                </FormControl>
+                    })}
+                />
 
                 {/* ----- START YEAR ----- */}
-                <FormControl>
-                    <InputLabel
-                        style={{ color: colors.greenAccent[400], fontSize: 16 }}
-                    >
-                        Start Year
-                    </InputLabel>
-                    <Select
-                        action={action}
-                        value={startYear}
-                        placeholder='startYear'
-                        onChange={changeHandler}
-                        name='startYear'
-                        label='Start Year'
-                        sx={{ minWidth: 125 }}
-                    >
-                        {allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(endYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
-                        })
+                <AppSelect
+                    label="Start Year"
+                    placeholder='startYear'
+                    name='startYear'
+                    onChange={changeHandler}
+                    value={startYear}
+                    valuesFunc={allYears.map((year, i) => {
+                        if (parseInt(year) <= parseInt(endYear)) {
+                            return <MenuItem key={i} value={year}>{year}</MenuItem>
                         }
-                    </Select>
-                </FormControl>
+                    })}
+                />
 
                 {/* ----- END YEAR ----- */}
-                <FormControl>
-                    <InputLabel
-                        style={{ color: colors.greenAccent[400], fontSize: 16 }}
-                    >
-                        End Year
-                    </InputLabel>
-                    <Select
-                        action={action}
-                        value={endYear}
-                        placeholder='endYear'
-                        onChange={changeHandler}
-                        name='endYear'
-                        label='End Year'
-                        sx={{ minWidth: 125 }}
-                    >
-                        {allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(startYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
+                <AppSelect
+                    label="End Year"
+                    placeholder='endYear'
+                    name='endYear'
+                    onChange={changeHandler}
+                    value={endYear}
+                    valuesFunc={allYears.slice().sort((a, b) => b - a).map((year, i) => {
+                        if (parseInt(year) >= parseInt(startYear)) {
+                            return <MenuItem key={i} value={year}>{year}</MenuItem>
                         }
-                        )}
-                    </Select>
-                </FormControl>
+                    })}
+                />
 
             </Box>
 

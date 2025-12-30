@@ -59,8 +59,10 @@ const League = () => {
                 testData.push(t);
             }
 
+            const containerWidth = action.current ? action.current.offsetWidth : (isMobile ? window.innerWidth - 60 : window.innerWidth - 320);
+
             const plot = Plot.plot({
-                width: isMobile ? (window.innerWidth - 60) : (window.innerWidth - 320),
+                width: containerWidth,
                 height: 400,
                 marginBottom: 60,
                 axis: null,
@@ -151,6 +153,7 @@ const League = () => {
                 alignItems='center'
                 justifyContent='center'
                 display='flex'
+                flexWrap='wrap'
             >
                 <AppSelect
                     label='Year'
@@ -189,13 +192,10 @@ const League = () => {
 
             <Box
                 mt='40px'
-                justifyContent='space-evenly'
+                justifyContent='center'
                 display='flex'
-                sx={
-                    {
-                        minWidth: '125px'
-                    }
-                }
+                flexWrap='wrap'
+                gap='20px'
             >
                 <StatBox title='Avg Score' subtitle={meanScore} />
                 <StatBox title='A Flight Winner' subtitle={aWinner} />
@@ -207,9 +207,12 @@ const League = () => {
             <Box
                 alignItems='center'
                 mt='40px'
+                display='flex'
+                flexDirection='column'
+                width='100%'
             >
-                <Box>
-                    <div ref={action} />
+                <Box width='100%' display='flex' justifyContent='center'>
+                    <div ref={action} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
                 </Box>
 
                 <Box

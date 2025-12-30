@@ -7,7 +7,7 @@ export async function postNewGolfer(_data) {
   console.log('Posting to: ', urlPost, JSON.stringify(_data));
   const response = await fetch(urlPost, {
     method: "POST",
-    headers: { "content-type": "application/json", },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(_data),
   });
   return response.json();
@@ -18,7 +18,7 @@ export async function postNewWeek(_data) {
   console.log('Posting to: ', urlPost, _data);
   const response = await fetch(urlPost, {
     method: "POST",
-    headers: { "content-type": "application/json", },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(_data),
   });
   return response.json();
@@ -29,7 +29,7 @@ export async function postRemoveWeek(_data) {
   console.log('Posting to: ', urlPost, _data);
   const response = await fetch(urlPost, {
     method: "POST",
-    headers: { "content-type": "application/json", },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(_data),
   });
   return response.json();
@@ -40,7 +40,7 @@ export async function postUpdate(_data) {
   console.log('Posting to: ', urlPost, _data);
   const response = await fetch(urlPost, {
     method: "POST",
-    headers: { "content-type": "application/json", },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(_data),
   });
   return response.json();
