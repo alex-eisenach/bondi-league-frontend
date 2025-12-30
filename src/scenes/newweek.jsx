@@ -33,18 +33,26 @@ const NewWeek = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogSubmit, setDialogSubmit] = useState(false);
     const [auth, setAuth] = useState('');
+    const [authDialogOpen, setAuthDialogOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
     const changeGolfer = golfer => { setName(golfer) }
     const incrStr = (str, incr = 1) => { return (parseInt(str) + incr).toString() };
 
     useEffect(() => {
         if (!loading) {
-            // Set defaults for new week (next week after latest)
-            if (parseInt(latestWeek) < 15) {
-                setYear(latestYear);
-                setWeek(incrStr(latestWeek));
+            const currentYear = new Date().getFullYear().toString();
+            setYear(currentYear);
+
+            // If we're already working in the current year, predict the next week
+            if (currentYear === latestYear) {
+                if (parseInt(latestWeek) < 15) {
+                    setWeek(incrStr(latestWeek));
+                } else {
+                    setWeek('1');
+                }
             } else {
-                setYear(incrStr(latestYear));
+                // If it's a new year with no data yet, or we're jumping to current, start at wk 1
                 setWeek('1');
             }
         }
@@ -71,10 +79,19 @@ const NewWeek = () => {
     };
 
     const handleAuth = event => {
-        setAuth(event.target.value);
+        const val = event.target.value;
+        setAuth(val);
+        if (val === 'suckwithpace') {
+            setAuthDialogOpen(false);
+            if (pendingAction) {
+                pendingAction();
+                setPendingAction(null);
+            }
+        }
     };
 
-    const handleSubmit = (values) => {
+
+    const performSubmit = () => {
         console.log('Posting values: ', rowsState);
 
         // If new golfer is part of the pareto, add him first
@@ -106,6 +123,15 @@ const NewWeek = () => {
         setDialogSubmit(true);
     };
 
+    const handleSubmit = (values) => {
+        if (auth !== 'suckwithpace') {
+            setPendingAction(() => performSubmit);
+            setAuthDialogOpen(true);
+            return;
+        }
+        performSubmit();
+    };
+
     const golferNames = useMemo(
         () => allNames.sort(),
         [allNames]
@@ -121,10 +147,23 @@ const NewWeek = () => {
     const years = useMemo(
         () => {
             if (!allYears.length) return [];
-            const lastYear = allYears.slice(-1)[0];
+            const lastYear = allYears[allYears.length - 1];
             const wksForYr = yearsToWeeks[lastYear] || [];
             const nextYear = incrStr(lastYear);
-            return wksForYr.slice(-1)[0] === '15' ? [nextYear, incrStr(nextYear)] : [lastYear, nextYear];
+
+            // Combine all existing years with the predicted "New" year
+            let yearOptions = [...allYears];
+            if (wksForYr.slice(-1)[0] === '15') {
+                if (!yearOptions.includes(nextYear)) yearOptions.push(nextYear);
+            }
+
+            // Also ensure current calendar year is present if it's not already
+            const currentCalendarYear = new Date().getFullYear().toString();
+            if (!yearOptions.includes(currentCalendarYear)) {
+                yearOptions.push(currentCalendarYear);
+            }
+
+            return Array.from(new Set(yearOptions)).sort((a, b) => b - a);
         },
         [allYears, yearsToWeeks]
     );
@@ -196,10 +235,16 @@ const NewWeek = () => {
 
     return (
         <Box
-            p='20px'
+            p={isNonMobile ? '20px' : '10px'}
+            textAlign='center'
             display="flex"
             flexDirection="column"
-            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
+            sx={{
+                width: '100%',
+                minHeight: 'calc(100vh - 80px)',
+                overflowX: 'auto',
+                '& > *': { minWidth: 'fit-content' }
+            }}
         >
             <Header title='Add New Week' />
             <Box
@@ -337,7 +382,20 @@ const NewWeek = () => {
                             max={70}
                             defaultValue={[45]}
                             onChange={e => setScore(e.target.value)}
-                            sx={{ color: colors.greenAccent[400], mt: '50px' }}
+                            sx={{
+                                color: colors.greenAccent[400],
+                                mt: '50px',
+                                '& .MuiSlider-thumb': {
+                                    height: 24,
+                                    width: 24,
+                                },
+                                '& .MuiSlider-valueLabel': {
+                                    fontSize: '1.1rem',
+                                },
+                                '& .MuiSlider-markLabel': {
+                                    fontSize: '1.1rem',
+                                }
+                            }}
                         />
                     </Box>
 
@@ -356,7 +414,7 @@ const NewWeek = () => {
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleAddRow}
-                            disabled={week && year && name && score ? false : true}
+                            disabled={week && year && name ? false : true}
                         >
                             Add
                         </Button>
@@ -368,7 +426,7 @@ const NewWeek = () => {
                             alignItems='center'
                             justifyContent='space-evenly'
                             onClick={handleDialogOpen}
-                            disabled={week && year && name && score ? false : true}
+                            disabled={week && year ? false : true}
                         >
                             Remove Week
                         </Button>
@@ -470,9 +528,10 @@ const NewWeek = () => {
                 <DialogActions>
                     <Button
                         sx={{ color: colors.greenAccent[400] }}
-                        component={Link}
-                        to='/league'
-                        reloadDocument
+                        onClick={() => {
+                            window.location.href = '/#/league';
+                            window.location.reload();
+                        }}
                     >
                         Go to scoreboard
                     </Button>
@@ -481,7 +540,7 @@ const NewWeek = () => {
             </Dialog>
 
             <Dialog
-                open={false} //{auth === 'suckwithpace' ? false : true}
+                open={authDialogOpen}
                 hideBackdrop={true}
                 disableEnforceFocus={true}
                 disableScrollLock={true}
@@ -493,12 +552,12 @@ const NewWeek = () => {
                 }}
             >
                 <DialogTitle>
-                    {"Hey!"}
+                    {"Admin Access Required"}
                 </DialogTitle>
 
                 <DialogContent>
                     <DialogContentText>
-                        Type in the secret password...
+                        Type in the secret password to add scores...
                     </DialogContentText>
                     <TextField
                         autoFocus
@@ -507,13 +566,21 @@ const NewWeek = () => {
                         id='name'
                         name='auth'
                         label='Password'
-                        type='auth'
+                        type='password'
                         fullWidth
                         variant='standard'
                         value={auth}
                         onChange={handleAuth}
                     />
                 </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setAuth('');
+                        setAuthDialogOpen(false);
+                    }} color="primary">
+                        Cancel
+                    </Button>
+                </DialogActions>
             </Dialog>
         </Box>
     )
