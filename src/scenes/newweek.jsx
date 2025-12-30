@@ -2,6 +2,8 @@ import * as React from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Autocomplete, Box, Button, IconButton, MenuItem, TextField, useTheme, Slider } from '@mui/material';
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { DataGrid } from "@mui/x-data-grid";
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -27,7 +29,7 @@ const NewWeek = () => {
 
     const [week, setWeek] = useState('');
     const [year, setYear] = useState('');
-    const [score, setScore] = useState('');
+    const [score, setScore] = useState(45);
     const [name, setName] = useState('');
     const [rowsState, setRowsState] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -347,56 +349,87 @@ const NewWeek = () => {
                         >
                         </Autocomplete>
 
-                        <Slider
-                            mt='40px'
-                            minWidth='150px'
-                            valueLabelDisplay='on'
-                            step={1}
-                            marks={[
-                                {
-                                    value: 20,
-                                    label: '20',
-                                },
-                                {
-                                    value: 30,
-                                    label: '30',
-                                },
-                                {
-                                    value: 40,
-                                    label: '40',
-                                },
-                                {
-                                    value: 50,
-                                    label: '50',
-                                },
-                                {
-                                    value: 60,
-                                    label: '60',
-                                },
-                                {
-                                    value: 70,
-                                    label: '70',
-                                },
-                            ]}
-                            min={30}
-                            max={70}
-                            defaultValue={[45]}
-                            onChange={e => setScore(e.target.value)}
+                        <Box
                             sx={{
-                                color: colors.greenAccent[400],
-                                mt: '50px',
-                                '& .MuiSlider-thumb': {
-                                    height: 24,
-                                    width: 24,
-                                },
-                                '& .MuiSlider-valueLabel': {
-                                    fontSize: '1.1rem',
-                                },
-                                '& .MuiSlider-markLabel': {
-                                    fontSize: '1.1rem',
-                                }
+                                width: isNonMobile ? 400 : '100%',
+                                mt: '40px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
                             }}
-                        />
+                        >
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    width: '100%',
+                                    mb: '-20px',
+                                    zIndex: 1
+                                }}
+                            >
+                                <IconButton
+                                    onClick={() => setScore(prev => Math.max(30, prev - 1))}
+                                    sx={{ color: colors.greenAccent[400] }}
+                                >
+                                    <ArrowLeftIcon sx={{ fontSize: '2.5rem' }} />
+                                </IconButton>
+                                <IconButton
+                                    onClick={() => setScore(prev => Math.min(70, prev + 1))}
+                                    sx={{ color: colors.greenAccent[400] }}
+                                >
+                                    <ArrowRightIcon sx={{ fontSize: '2.5rem' }} />
+                                </IconButton>
+                            </Box>
+                            <Slider
+                                minWidth='150px'
+                                valueLabelDisplay='on'
+                                step={1}
+                                marks={[
+                                    {
+                                        value: 20,
+                                        label: '20',
+                                    },
+                                    {
+                                        value: 30,
+                                        label: '30',
+                                    },
+                                    {
+                                        value: 40,
+                                        label: '40',
+                                    },
+                                    {
+                                        value: 50,
+                                        label: '50',
+                                    },
+                                    {
+                                        value: 60,
+                                        label: '60',
+                                    },
+                                    {
+                                        value: 70,
+                                        label: '70',
+                                    },
+                                ]}
+                                min={30}
+                                max={70}
+                                value={score}
+                                onChange={e => setScore(e.target.value)}
+                                sx={{
+                                    color: colors.greenAccent[400],
+                                    mt: '30px',
+                                    '& .MuiSlider-thumb': {
+                                        height: 24,
+                                        width: 24,
+                                    },
+                                    '& .MuiSlider-valueLabel': {
+                                        fontSize: '1.1rem',
+                                    },
+                                    '& .MuiSlider-markLabel': {
+                                        fontSize: '1.1rem',
+                                    }
+                                }}
+                            />
+                        </Box>
                     </Box>
 
                     <Box
