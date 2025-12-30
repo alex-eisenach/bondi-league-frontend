@@ -140,11 +140,16 @@ const League = () => {
 
     return (
         <Box
-            p='20px'
+            p={isMobile ? '10px' : '20px'}
             textAlign='center'
             display="flex"
             flexDirection="column"
-            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
+            sx={{
+                width: '100%',
+                minHeight: 'calc(100vh - 80px)',
+                overflowX: 'auto',
+                '& > *': { minWidth: 'fit-content' } // Ensures children don't get squashed below their content size
+            }}
         >
             <Header title='League Stats Per Week' />
 
@@ -154,6 +159,7 @@ const League = () => {
                 justifyContent='center'
                 display='flex'
                 flexWrap='wrap'
+                sx={{ gap: '10px' }}
             >
                 <AppSelect
                     label='Year'
@@ -217,83 +223,86 @@ const League = () => {
 
                 <Box
                     display='flex'
-                    flexDirection='row'
-                    justifyContent='space-around'
+                    flexDirection={isMobile ? 'column' : 'row'}
                     mt='20px'
+                    width='100%'
+                    gap='30px'
                 >
-                    <Typography
-                        variant='h2'
-                        fontWeight='bold'
-                        padding='10px'
-                        sx={
-                            {
+                    {/* A FLIGHT COLUMN */}
+                    <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
+                        <Typography
+                            variant='h2'
+                            fontWeight='bold'
+                            padding='10px'
+                            sx={{
                                 border: 1,
                                 borderColor: colors.greenAccent[400],
-                                borderRadius: '5%'
-                            }
-                        }
-                    //sx = {{ color: colors.greenAccent[400] }}
-                    >
-                        A Flight
-                    </Typography>
+                                borderRadius: '5%',
+                                width: isMobile ? '80%' : '100%',
+                                textAlign: 'center',
+                                mb: '10px'
+                            }}
+                        >
+                            A Flight
+                        </Typography>
+                        <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
+                            <DataGrid
+                                columns={columns()}
+                                rows={rows('A')}
+                                hideFooter={true}
+                                initialState={{
+                                    sorting: {
+                                        sortModel: [{ field: 'Net Score', sort: 'asc' }]
+                                    }
+                                }}
+                                autoHeight
+                                sx={{
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        color: `${colors.greenAccent[400]}`,
+                                        fontWeight: 800
+                                    }
+                                }}
+                            />
+                        </Box>
+                    </Box>
 
-                    <Typography
-                        variant='h2'
-                        fontWeight='bold'
-                        padding='10px'
-                        sx={
-                            {
+                    {/* B FLIGHT COLUMN */}
+                    <Box flex={1} display='flex' flexDirection='column' alignItems='center' width='100%' gap='10px'>
+                        <Typography
+                            variant='h2'
+                            fontWeight='bold'
+                            padding='10px'
+                            sx={{
                                 border: 1,
                                 borderColor: colors.greenAccent[400],
-                                borderRadius: '5%'
-                            }
-                        }
-                    //sx = {{ color: colors.greenAccent[400] }}
-                    >
-                        B Flight
-                    </Typography>
-                </Box>
-
-                <Box
-                    display='flex'
-                    flexDirection='row'
-                    mt='10px'
-                >
-                    <DataGrid
-                        columns={columns()}
-                        rows={rows('A')}
-                        hideFooter={true}
-                        initialState={{
-                            sorting: {
-                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
-                            }
-                        }}
-                        sx={{
-                            flex: 1,
-                            '& .MuiDataGrid-columnHeaders': {
-                                color: `${colors.greenAccent[400]}`,
-                                fontWeight: 800
-                            }
-                        }}
-                    />
-                    <DataGrid
-                        columns={columns()}
-                        rows={rows('B')}
-                        hideFooter={true}
-                        initialState={{
-                            sorting: {
-                                sortModel: [{ field: 'Net Score', sort: 'asc' }]
-                            }
-                        }}
-                        sx={{
-                            flex: 1,
-                            marginLeft: '10px',
-                            '& .MuiDataGrid-columnHeaders': {
-                                color: `${colors.greenAccent[400]}`,
-                                fontWeight: 800
-                            }
-                        }}
-                    />
+                                borderRadius: '5%',
+                                width: isMobile ? '80%' : '100%',
+                                textAlign: 'center',
+                                mb: '10px'
+                            }}
+                        >
+                            B Flight
+                        </Typography>
+                        <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
+                            <DataGrid
+                                columns={columns()}
+                                rows={rows('B')}
+                                hideFooter={true}
+                                initialState={{
+                                    sorting: {
+                                        sortModel: [{ field: 'Net Score', sort: 'asc' }]
+                                    }
+                                }}
+                                autoHeight
+                                sx={{
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        color: `${colors.greenAccent[400]}`,
+                                        fontWeight: 800
+                                    }
+                                }}
+                            />
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
         </Box>

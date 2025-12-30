@@ -182,11 +182,16 @@ const Individual = () => {
 
     return (
         <Box
-            p='20px'
+            p={isMobile ? '10px' : '20px'}
             textAlign='center'
             display="flex"
             flexDirection="column"
-            sx={{ width: '100%', minHeight: 'calc(100vh - 80px)' }}
+            sx={{
+                width: '100%',
+                minHeight: 'calc(100vh - 80px)',
+                overflowX: 'auto',
+                '& > *': { minWidth: 'fit-content' }
+            }}
         >
             <Header title='Individual Golfer' />
 
