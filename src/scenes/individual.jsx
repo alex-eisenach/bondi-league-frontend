@@ -113,7 +113,7 @@ const Individual = () => {
                             }
                         },
                         textAnchor: 'start',
-                        fontSize: 10
+                        fontSize: isMobile ? 10 : 15
                     }),
                     Plot.axisX({
                         ticks: yrTicks,
@@ -121,10 +121,10 @@ const Individual = () => {
                         tickPadding: -8,
                         tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
                         textAnchor: 'start',
-                        fontSize: 12
+                        fontSize: isMobile ? 12 : 18
                     }),
                     Plot.axisY({
-                        fontSize: 12
+                        fontSize: isMobile ? 12 : 18
                     }),
                     Plot.gridX(),
                     Plot.dot(
@@ -154,7 +154,7 @@ const Individual = () => {
                             y: scores,
                             dy: 15,
                             text: (d, i) => `Net Score: ${(scores[i] - _handicap).toFixed(1)}`,
-                            fontSize: 14
+                            fontSize: isMobile ? 14 : 21
                         }),
                     ),
                     Plot.line(
@@ -293,22 +293,22 @@ const Individual = () => {
                             mt='15px'
                             alignItems='center'
                             display='flex'
-                            flexDirection={isMobile ? 'column' : 'row'}
+                            flexDirection='column'
                             padding='10px 0'
-                            ml={isMobile ? '0' : '20px'}
+                            width='100%'
                         >
-
-                            <Box width={isMobile ? '100%' : 'auto'}>
+                            <Box width='100%' display='flex' justifyContent='center'>
                                 <div ref={action} />
                             </Box>
 
                             <Box
                                 display='flex'
-                                flexDirection={isMobile ? 'row' : 'column'}
+                                flexDirection='row'
                                 justifyContent='space-evenly'
-                                mb='25px'
-                                width={isMobile ? '100%' : 'auto'}
-                                flexWrap={isMobile ? 'wrap' : 'nowrap'}
+                                mt='30px'
+                                width='100%'
+                                flexWrap='wrap'
+                                gap='20px'
                             >
                                 <StatBox
                                     title='Avg Score'

@@ -169,9 +169,9 @@ const League = () => {
     const columns = (isExcludedTable = false) => {
         let columns = [];
         columns.push({ field: 'Names', headerName: 'Golfers', width: 200 });
+        columns.push({ field: 'Net Score', headerName: 'Net Score' });
         columns.push({ field: 'Gross Score', headerName: 'Gross Score' });
         columns.push({ field: 'Handicap', headerName: '9-Hole Handicap', width: 150 });
-        columns.push({ field: 'Net Score', headerName: 'Net Score' });
         columns.push({
             field: 'Action',
             headerName: '',
