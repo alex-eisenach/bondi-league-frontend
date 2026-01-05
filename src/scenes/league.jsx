@@ -54,19 +54,19 @@ const League = () => {
         if (!resFlightMap || !Object.keys(resFlightMap).length) return;
 
         // Filter and re-flight
-        let activeGolfers = [];
+        let leagueParticipants = [];
         for (const [name, obj] of Object.entries(resFlightMap)) {
             if (!excludedGolfers.has(name)) {
-                activeGolfers.push({ ...obj, name });
+                leagueParticipants.push({ ...obj, name });
             }
         }
 
-        // Re-calculate flights
-        activeGolfers.sort((a, b) => a.handicap - b.handicap);
-        const midpoint = Math.ceil(activeGolfers.length / 2);
+        // Re-calculate flights for league participants
+        leagueParticipants.sort((a, b) => a.handicap - b.handicap);
+        const midpoint = Math.ceil(leagueParticipants.length / 2);
 
         let newFlightMap = { ...resFlightMap };
-        activeGolfers.forEach((g, i) => {
+        leagueParticipants.forEach((g, i) => {
             newFlightMap[g.name] = {
                 ...resFlightMap[g.name],
                 flight: i < midpoint ? 'A' : 'B'
@@ -78,14 +78,26 @@ const League = () => {
         let netScores = [];
         let testData = [];
 
-        activeGolfers.forEach(g => {
-            grossScores.push(g.gross);
-            netScores.push(g.net);
-            testData.push({ name: g.name, gross: g.gross, net: g.net });
+        // Prepare data for ALL golfers (including excluded ones)
+        Object.entries(resFlightMap).forEach(([name, obj]) => {
+            let flightColor;
+            if (excludedGolfers.has(name)) {
+                flightColor = colors.red[500];
+            } else {
+                const flight = newFlightMap[name]?.flight;
+                flightColor = flight === 'A' ? colors.greenAccent[400] : colors.primary[100];
+            }
+
+            grossScores.push(obj.gross);
+            netScores.push(obj.net);
+            testData.push({ name, gross: obj.gross, net: obj.net, flightColor, isExcluded: excludedGolfers.has(name) });
         });
 
-        const xMin = activeGolfers.length ? Math.min(...netScores) : 0;
-        const xMax = activeGolfers.length ? Math.max(...grossScores) : 100;
+        // Sort testData so excluded golfers are at the bottom of the plot or sorted by net score
+        testData.sort((a, b) => a.net - b.net);
+
+        const xMin = testData.length ? Math.min(...netScores) : 0;
+        const xMax = testData.length ? Math.max(...grossScores) : 100;
 
         const containerWidth = action.current ? action.current.offsetWidth : (isMobile ? window.innerWidth - 60 : window.innerWidth - 320);
 
@@ -103,14 +115,14 @@ const League = () => {
                 Plot.gridX({ strokeOpacity: 0.25 }),
                 Plot.dot(testData, { x: 'gross', y: 'name', r: 5 }),
                 Plot.dot(testData, { x: 'net', y: 'name', r: 5, symbol: 'asterisk' }),
-                Plot.dot(testData, Plot.pointer({ x: 'net', y: 'name', r: 8, fill: colors.greenAccent[400], symbol: 'star', maxRadius: 10 })),
-                Plot.dot(testData, Plot.pointer({ x: 'gross', y: 'name', r: 8, fill: colors.greenAccent[400], maxRadius: 10 })),
+                Plot.dot(testData, Plot.pointer({ x: 'net', y: 'name', r: 8, fill: d => d.flightColor, symbol: 'star', maxRadius: 10 })),
+                Plot.dot(testData, Plot.pointer({ x: 'gross', y: 'name', r: 8, fill: d => d.flightColor, maxRadius: 10 })),
                 Plot.ruleY(testData, Plot.groupY({ x1: 'min', x2: 'max' }, { x1: 'net', x2: 'gross', y: 'name', sort: { y: 'x1' }, strokeWidth: 3 })),
-                Plot.text(testData, { x: 'net', y: 'name', text: 'name', textAnchor: 'end', dx: -15, stroke: colors.greenAccent[400], strokeWidth: 0.5 }),
-                Plot.ruleX(testData, Plot.pointer({ x: 'net', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10 })),
-                Plot.ruleX(testData, Plot.pointer({ x: 'gross', py: 'name', stroke: colors.greenAccent[400], maxRadius: 10 })),
-                Plot.text(testData, Plot.pointer({ x: 'net', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Net Score: ${d.net.toFixed(2)}`, fontSize: 14, maxRadius: 10 })),
-                Plot.text(testData, Plot.pointer({ x: 'gross', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Gross Score: ${d.gross.toFixed(0)}`, fontSize: 14, maxRadius: 10 })),
+                Plot.text(testData, { x: 'net', y: 'name', text: 'name', textAnchor: 'end', dx: -15, fill: d => d.flightColor, fontWeight: 'bold' }),
+                Plot.ruleX(testData, Plot.pointer({ x: 'net', py: 'name', stroke: d => d.flightColor, maxRadius: 10 })),
+                Plot.ruleX(testData, Plot.pointer({ x: 'gross', py: 'name', stroke: d => d.flightColor, maxRadius: 10 })),
+                Plot.text(testData, Plot.pointer({ x: 'net', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Net Score: ${d.net.toFixed(2)}`, fontSize: 14, maxRadius: 10, fill: d => d.flightColor })),
+                Plot.text(testData, Plot.pointer({ x: 'gross', py: 'name', frameAnchor: 'bottom', dy: 15, text: (d) => `${d.name} Gross Score: ${d.gross.toFixed(0)}`, fontSize: 14, maxRadius: 10, fill: d => d.flightColor })),
             ]
         });
 
@@ -119,13 +131,13 @@ const League = () => {
             action.current.append(plot);
         }
 
-        // Recalculate summary
+        // Recalculate summary using only league participants
         let aWinner = { name: '?', net: Infinity };
         let bWinner = { name: '?', net: Infinity };
         let totalGross = 0;
         let lowNet = { name: '?', net: Infinity };
 
-        activeGolfers.forEach(g => {
+        leagueParticipants.forEach(g => {
             totalGross += g.gross;
             if (newFlightMap[g.name].flight === 'A' && g.net < aWinner.net) aWinner = { name: g.name, net: g.net };
             if (newFlightMap[g.name].flight === 'B' && g.net < bWinner.net) bWinner = { name: g.name, net: g.net };
@@ -135,7 +147,7 @@ const League = () => {
         setFlightMap(fd);
         setAWinner(aWinner.name);
         setBWinner(bWinner.name);
-        setMeanScore(activeGolfers.length > 0 ? (totalGross / activeGolfers.length).toFixed(1) : '?');
+        setMeanScore(leagueParticipants.length > 0 ? (totalGross / leagueParticipants.length).toFixed(1) : '?');
         setLowNet(lowNet.name !== '?' ? `${lowNet.name} (${lowNet.net.toFixed(2)})` : '?');
 
         return () => plot.remove();
@@ -271,8 +283,8 @@ const League = () => {
                         gap='20px'
                     >
                         <StatBox title='Avg Score' subtitle={meanScore} />
-                        <StatBox title='A Flight Winner' subtitle={aWinner} />
-                        <StatBox title='B Flight Winner' subtitle={bWinner} />
+                        <StatBox title='A Flight Winner' subtitle={aWinner} statColor={colors.greenAccent[400]} />
+                        <StatBox title='B Flight Winner' subtitle={bWinner} statColor={colors.primary[100]} />
                         <StatBox title='Low Net' subtitle={lowNet} />
                     </Box>
 
@@ -339,7 +351,7 @@ const League = () => {
                                     padding='10px'
                                     sx={{
                                         border: 1,
-                                        borderColor: colors.greenAccent[400],
+                                        borderColor: colors.primary[100],
                                         borderRadius: '5%',
                                         width: isMobile ? '80%' : '100%',
                                         textAlign: 'center',
@@ -362,7 +374,7 @@ const League = () => {
                                         autoHeight
                                         sx={{
                                             '& .MuiDataGrid-columnHeaders': {
-                                                color: `${colors.greenAccent[400]}`,
+                                                color: `${colors.primary[100]}`,
                                                 fontWeight: 800
                                             }
                                         }}
