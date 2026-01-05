@@ -232,8 +232,6 @@ const NewWeek = () => {
             sx={{
                 width: '100%',
                 minHeight: 'calc(100vh - 80px)',
-                overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='Add New Week' />
@@ -254,9 +252,11 @@ const NewWeek = () => {
                         >
                             <Box
                                 mt='20px'
-                                alignItems='left'
-                                justifyContent='left'
+                                alignItems='center'
+                                justifyContent='center'
                                 display='flex'
+                                flexWrap='wrap'
+                                gap='10px'
                             >
                                 <AppSelect
                                     label="Year"

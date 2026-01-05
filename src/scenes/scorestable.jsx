@@ -123,8 +123,6 @@ const Scorestable = () => {
             sx={{
                 width: '100%',
                 height: 'calc(100vh - 80px)',
-                overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='Master Spreadsheet' />

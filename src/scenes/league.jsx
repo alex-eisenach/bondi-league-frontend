@@ -242,8 +242,6 @@ const League = () => {
             sx={{
                 width: '100%',
                 minHeight: 'calc(100vh - 80px)',
-                overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='League Stats Per Week' />
@@ -293,7 +291,7 @@ const League = () => {
                         justifyContent='center'
                         display='flex'
                         flexWrap='wrap'
-                        gap='20px'
+                        gap={isMobile ? '10px' : '20px'}
                     >
                         <StatBox title='📊 Avg Score' subtitle={meanScore} statColor={colors.grey[500]} />
                         <StatBox title='🏆 A Flight Winner' subtitle={aWinner} statColor={colors.greenAccent[400]} />
@@ -329,8 +327,8 @@ const League = () => {
                                     sx={{
                                         border: 1,
                                         borderColor: colors.greenAccent[400],
-                                        borderRadius: '5%',
-                                        width: isMobile ? '80%' : '100%',
+                                        borderRadius: '8px',
+                                        width: '100%',
                                         textAlign: 'center',
                                         mb: '10px'
                                     }}
@@ -367,8 +365,8 @@ const League = () => {
                                     sx={{
                                         border: 1,
                                         borderColor: colors.primary[100],
-                                        borderRadius: '5%',
-                                        width: isMobile ? '80%' : '100%',
+                                        borderRadius: '8px',
+                                        width: '100%',
                                         textAlign: 'center',
                                         mb: '10px'
                                     }}
@@ -406,8 +404,8 @@ const League = () => {
                                 sx={{
                                     border: 1,
                                     borderColor: colors.red[500],
-                                    borderRadius: '5%',
-                                    width: isMobile ? '80%' : '50%',
+                                    borderRadius: '8px',
+                                    width: isMobile ? '100%' : '50%',
                                     textAlign: 'center',
                                     mb: '10px'
                                 }}

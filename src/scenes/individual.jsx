@@ -255,8 +255,6 @@ const Individual = () => {
             sx={{
                 width: '100%',
                 minHeight: 'calc(100vh - 80px)',
-                overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='Individual Golfer' />
@@ -440,16 +438,16 @@ const Individual = () => {
                                                 const sortedYears = Object.keys(groupedByYear).sort((a, b) => b - a);
 
                                                 return sortedYears.map(year => (
-                                                    <Box key={year} display='flex' flexDirection='row' alignItems='center'>
+                                                    <Box key={year} display='flex' flexDirection={isMobile ? 'column' : 'row'} alignItems={isMobile ? 'center' : 'center'} mb={isMobile ? '20px' : '0'}>
                                                         {/* Year Label */}
-                                                        <Box sx={{ minWidth: '80px', textAlign: 'right', mr: '20px' }}>
+                                                        <Box sx={{ minWidth: isMobile ? 'auto' : '80px', textAlign: isMobile ? 'center' : 'right', mr: isMobile ? '0' : '20px', mb: isMobile ? '10px' : '0' }}>
                                                             <Typography variant='h5' fontWeight='bold' color={colors.grey[300]}>
                                                                 {year}
                                                             </Typography>
                                                         </Box>
 
                                                         {/* Scores Row */}
-                                                        <Box display='flex' flexWrap='wrap' justifyContent='flex-start' gap='10px'>
+                                                        <Box display='flex' flexWrap='wrap' justifyContent={isMobile ? 'center' : 'flex-start'} gap='10px'>
                                                             {groupedByYear[year].map((s, i) => (
                                                                 <Box
                                                                     key={i}

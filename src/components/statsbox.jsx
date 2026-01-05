@@ -7,36 +7,38 @@ const StatBox = ({ title, subtitle, statColor = null }) => {
     const borderColor = (!statColor) ? colors.greenAccent[400] : statColor;
 
     return (
-        <Box >
+        <Box sx={{ flex: '1 1 150px', maxWidth: '300px' }}>
             <Box
                 display='flex'
                 flexDirection='column'
                 justifyContent='space-evenly'
-                //width='200px'
-                //minHeight='85px'
-                padding='10px   '
-                m='0 10px'
+                padding='15px'
+                m='5px'
                 sx={
                     {
                         border: 1,
-                        borderColor: { borderColor },
-                        borderRadius: '5%'
+                        borderColor: borderColor,
+                        borderRadius: '8px',
+                        height: '100%',
+                        minHeight: '80px',
+                        transition: 'transform 0.2s',
+                        '&:hover': { transform: 'scale(1.02)' }
                     }
                 }
             >
                 <Box justifyContent='left'>
                     <Typography
                         variant='h6'
-                        sx={{ color: borderColor }}
+                        sx={{ color: borderColor, fontSize: '0.9rem', opacity: 0.9 }}
                     >
                         {title}
                     </Typography>
                 </Box>
-                <Box display='flex' justifyContent='space-evenly'>
+                <Box display='flex' justifyContent='center' mt='5px'>
                     <Typography
                         variant='h4'
                         fontWeight='bold'
-                        sx={{ color: colors.grey[100] }}
+                        sx={{ color: colors.grey[100], wordBreak: 'break-word', textAlign: 'center' }}
                     >
                         {subtitle}
                     </Typography>
