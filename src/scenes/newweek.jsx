@@ -284,9 +284,38 @@ const NewWeek = () => {
                                     value={week}
                                     disabled={rowsState.length ? true : false}
                                     onChange={e => setWeek(e.target.value)}
+                                    renderValue={(selected) => `Week ${selected}`}
                                     valuesFunc={
                                         allWeeks.map((w, i) => {
-                                            return <MenuItem key={i} value={w}>{w}</MenuItem>
+                                            const isExisting = (yearsToWeeks[year] || []).includes(w);
+                                            return (
+                                                <MenuItem
+                                                    key={i}
+                                                    value={w}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        gap: '20px',
+                                                        minWidth: '150px'
+                                                    }}
+                                                >
+                                                    <Box component="span" sx={{ fontWeight: isExisting ? 700 : 400 }}>
+                                                        Week {w}
+                                                    </Box>
+                                                    <Box
+                                                        component="span"
+                                                        sx={{
+                                                            fontSize: "0.7rem",
+                                                            color: isExisting ? colors.greenAccent[400] : colors.grey[500],
+                                                            fontWeight: 600,
+                                                            textTransform: "uppercase"
+                                                        }}
+                                                    >
+                                                        {isExisting ? "● Exists" : "○ New"}
+                                                    </Box>
+                                                </MenuItem>
+                                            )
                                         })
                                     }
                                     sx={{
