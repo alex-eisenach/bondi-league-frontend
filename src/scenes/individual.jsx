@@ -66,25 +66,15 @@ const Individual = () => {
 
 
     useEffect(() => {
-        if (!allWeeks.length || !golfer) { return }
+        if (!golfer) return;
 
-        getGolferStats(
-            golfer,
-            startYear,
-            startWeek,
-            endYear,
-            endWeek
-        ).then(stats => {
+        getGolferStats(golfer).then(stats => {
             if (!stats || !stats.scores || stats.scores.length === 0) {
                 setHcapDetails({ notEnough: true });
                 return;
             }
 
-            const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
-            const intercept = Array.isArray(_trend[0]) ? _trend[0][0] : _trend[0];
-            const slope = Array.isArray(_trend[1]) ? _trend[1][0] : _trend[1];
-
-            // Handicap calculation details for visualization
+            const { scores, dates, handicap: _handicap } = stats;
             const nRounds = 8;
             const slopeGlobal = 113;
             const uteSlope = 124;
@@ -94,7 +84,7 @@ const Individual = () => {
             if (scores.length <= 2) {
                 setHcapDetails({ notEnough: true, totalScores: scores.length });
             } else {
-                // Pick last 20 scores
+                // Pick last 20 scores from ALL-TIME history
                 const lastTwenty = scores.length > 20 ? scores.slice(-20) : scores;
                 const lastTwentyDates = dates.length > 20 ? dates.slice(-20) : dates;
 
@@ -131,6 +121,27 @@ const Individual = () => {
                     notEnough: false
                 });
             }
+        });
+    }, [golfer]);
+
+
+    useEffect(() => {
+        if (!allWeeks.length || !golfer) { return }
+
+        getGolferStats(
+            golfer,
+            startYear,
+            startWeek,
+            endYear,
+            endWeek
+        ).then(stats => {
+            if (!stats || !stats.scores || stats.scores.length === 0) {
+                return;
+            }
+
+            const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
+            const intercept = Array.isArray(_trend[0]) ? _trend[0][0] : _trend[0];
+            const slope = Array.isArray(_trend[1]) ? _trend[1][0] : _trend[1];
 
             if (scores.length < 2) return;
             const genYearTicks = tickCallbackTracker([...dates]);
@@ -244,8 +255,6 @@ const Individual = () => {
             sx={{
                 width: '100%',
                 minHeight: 'calc(100vh - 80px)',
-                overflowX: 'auto',
-                '& > *': { minWidth: 'fit-content' }
             }}
         >
             <Header title='Individual Golfer' />
@@ -413,33 +422,60 @@ const Individual = () => {
                                 </Box>
                             ) : (
                                 <>
-                                    <Typography variant='h5' mb='15px' color={colors.grey[200]}>
+                                    <Typography variant='h5' mb='25px' color={colors.grey[200]}>
                                         Recent Score History (Last {hcapDetails.totalInWindow})
                                     </Typography>
-                                    <Box display='flex' flexWrap='wrap' justifyContent='center' gap='10px' mb='40px'>
-                                        {hcapDetails.scores.map((s, i) => (
-                                            <Box
-                                                key={i}
-                                                p='12px'
-                                                sx={{
-                                                    border: 2,
-                                                    borderColor: s.isBest ? colors.greenAccent[400] : 'transparent',
-                                                    bgcolor: s.isBest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                                    borderRadius: '8px',
-                                                    minWidth: '70px',
-                                                    textAlign: 'center',
-                                                    transition: 'transform 0.2s',
-                                                    '&:hover': { transform: 'scale(1.05)' }
-                                                }}
-                                            >
-                                                <Typography variant='h6' fontWeight={s.isBest ? 'bold' : 'normal'} color={s.isBest ? colors.greenAccent[400] : colors.grey[100]}>
-                                                    {s.score}
-                                                </Typography>
-                                                <Typography variant='caption' sx={{ display: 'block', mt: '4px', opacity: 0.7 }}>
-                                                    Wk {s.date.split(' ')[2]}
-                                                </Typography>
-                                            </Box>
-                                        ))}
+
+                                    <Box width='100%' display='flex' justifyContent='center' mb='40px'>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '30px', width: 'fit-content' }}>
+                                            {(() => {
+                                                const groupedByYear = {};
+                                                hcapDetails.scores.forEach(s => {
+                                                    const year = s.date.split(' ')[0];
+                                                    if (!groupedByYear[year]) groupedByYear[year] = [];
+                                                    groupedByYear[year].push(s);
+                                                });
+                                                const sortedYears = Object.keys(groupedByYear).sort((a, b) => b - a);
+
+                                                return sortedYears.map(year => (
+                                                    <Box key={year} display='flex' flexDirection={isMobile ? 'column' : 'row'} alignItems={isMobile ? 'center' : 'center'} mb={isMobile ? '20px' : '0'}>
+                                                        {/* Year Label */}
+                                                        <Box sx={{ minWidth: isMobile ? 'auto' : '80px', textAlign: isMobile ? 'center' : 'right', mr: isMobile ? '0' : '20px', mb: isMobile ? '10px' : '0' }}>
+                                                            <Typography variant='h5' fontWeight='bold' color={colors.grey[300]}>
+                                                                {year}
+                                                            </Typography>
+                                                        </Box>
+
+                                                        {/* Scores Row */}
+                                                        <Box display='flex' flexWrap='wrap' justifyContent={isMobile ? 'center' : 'flex-start'} gap='10px'>
+                                                            {groupedByYear[year].map((s, i) => (
+                                                                <Box
+                                                                    key={i}
+                                                                    p='12px'
+                                                                    sx={{
+                                                                        border: 2,
+                                                                        borderColor: s.isBest ? colors.greenAccent[400] : 'transparent',
+                                                                        bgcolor: s.isBest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                                                        borderRadius: '8px',
+                                                                        minWidth: '70px',
+                                                                        textAlign: 'center',
+                                                                        transition: 'transform 0.2s',
+                                                                        '&:hover': { transform: 'scale(1.05)' }
+                                                                    }}
+                                                                >
+                                                                    <Typography variant='h6' fontWeight={s.isBest ? 'bold' : 'normal'} color={s.isBest ? colors.greenAccent[400] : colors.grey[100]}>
+                                                                        {s.score}
+                                                                    </Typography>
+                                                                    <Typography variant='caption' sx={{ display: 'block', mt: '4px', opacity: 0.7 }}>
+                                                                        Wk {s.date.split(' ')[2]}
+                                                                    </Typography>
+                                                                </Box>
+                                                            ))}
+                                                        </Box>
+                                                    </Box>
+                                                ));
+                                            })()}
+                                        </Box>
                                     </Box>
 
                                     <Box
