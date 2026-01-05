@@ -1,9 +1,10 @@
-import { Autocomplete, Box, MenuItem, TextField, useTheme, useMediaQuery } from '@mui/material';
+import { Autocomplete, Box, MenuItem, TextField, Typography, useTheme, useMediaQuery } from '@mui/material';
 import * as Plot from '@observablehq/plot';
 import { useEffect, useRef, useState } from 'react';
 import Header from "../components/header";
 import AppSelect from '../components/select';
 import StatBox from '../components/statsbox';
+import LoadingScreen from '../components/LoadingScreen';
 import { getGolferStats } from "../data/data";
 import { useMetadata } from '../context/MetadataContext';
 import { tokens } from "../theme";
@@ -26,11 +27,14 @@ const Individual = () => {
     const [bestScore, setBestScore] = useState(0.0);
     const [avgScore, setAvgScore] = useState(0.0);
 
+    const [hcapDetails, setHcapDetails] = useState(null);
+
     // Initial defaults when metadata loads
     useEffect(() => {
         if (!loading) {
             setEndWeek(latestWeek);
             setEndYear(latestYear);
+            setStartYear(latestYear);
         }
     }, [loading, latestWeek, latestYear]);
 
@@ -71,13 +75,64 @@ const Individual = () => {
             endYear,
             endWeek
         ).then(stats => {
-            if (!stats || !stats.scores || stats.scores.length < 2) return;
+            if (!stats || !stats.scores || stats.scores.length === 0) {
+                setHcapDetails({ notEnough: true });
+                return;
+            }
 
             const { handicap: _handicap, trend: _trend, avgScore: _avgScore, scores, dates } = stats;
             const intercept = Array.isArray(_trend[0]) ? _trend[0][0] : _trend[0];
             const slope = Array.isArray(_trend[1]) ? _trend[1][0] : _trend[1];
 
-            // Handle plot update
+            // Handicap calculation details for visualization
+            const nRounds = 8;
+            const slopeGlobal = 113;
+            const uteSlope = 124;
+            const slopeUteCreek = slopeGlobal / uteSlope;
+            const rating = 69.3 / 2.0;
+
+            if (scores.length <= 2) {
+                setHcapDetails({ notEnough: true, totalScores: scores.length });
+            } else {
+                // Pick last 20 scores
+                const lastTwenty = scores.length > 20 ? scores.slice(-20) : scores;
+                const lastTwentyDates = dates.length > 20 ? dates.slice(-20) : dates;
+
+                // Sort and slice to find best scores
+                const sorted = [...lastTwenty].sort((a, b) => a - b);
+                const bestScores = sorted.slice(0, Math.min(nRounds, sorted.length));
+                const meanBest = bestScores.reduce((a, b) => a + b, 0) / bestScores.length;
+
+                // Mark which scores are "best" (handling duplicates)
+                const bestCounts = {};
+                bestScores.forEach(s => bestCounts[s] = (bestCounts[s] || 0) + 1);
+
+                const detailedScores = lastTwenty.map((s, i) => {
+                    let isBest = false;
+                    if (bestCounts[s] > 0) {
+                        isBest = true;
+                        bestCounts[s]--;
+                    }
+                    return {
+                        score: s,
+                        date: lastTwentyDates[i],
+                        isBest
+                    };
+                });
+
+                setHcapDetails({
+                    scores: detailedScores,
+                    meanBest,
+                    slopeUteCreek,
+                    rating,
+                    nRoundsUsed: bestScores.length,
+                    totalInWindow: lastTwenty.length,
+                    handicap: _handicap,
+                    notEnough: false
+                });
+            }
+
+            if (scores.length < 2) return;
             const genYearTicks = tickCallbackTracker([...dates]);
             let yrTicks = [];
             for (const _date of genYearTicks) {
@@ -111,7 +166,7 @@ const Individual = () => {
                             }
                         },
                         textAnchor: 'start',
-                        fontSize: 10
+                        fontSize: isMobile ? 10 : 15
                     }),
                     Plot.axisX({
                         ticks: yrTicks,
@@ -119,10 +174,10 @@ const Individual = () => {
                         tickPadding: -8,
                         tickFormat: (s, i) => ` ${(yrTicks[i]) ? yrTicks[i].split(' ')[0] : yrTicks[i]}`,
                         textAnchor: 'start',
-                        fontSize: 12
+                        fontSize: isMobile ? 12 : 18
                     }),
                     Plot.axisY({
-                        fontSize: 12
+                        fontSize: isMobile ? 12 : 18
                     }),
                     Plot.gridX(),
                     Plot.dot(
@@ -152,7 +207,7 @@ const Individual = () => {
                             y: scores,
                             dy: 15,
                             text: (d, i) => `Net Score: ${(scores[i] - _handicap).toFixed(1)}`,
-                            fontSize: 14
+                            fontSize: isMobile ? 14 : 21
                         }),
                     ),
                     Plot.line(
@@ -177,7 +232,7 @@ const Individual = () => {
         });
 
     },
-        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks]
+        [golfer, endYear, endWeek, startYear, startWeek, isMobile, allWeeks, colors.greenAccent, colors.grey, colors.red]
     );
 
     return (
@@ -195,136 +250,245 @@ const Individual = () => {
         >
             <Header title='Individual Golfer' />
 
-            <Box
-                mt='20px'
-                alignItems='center'
-                justifyContent='center'
-                display='flex'
-            >
-                <Autocomplete
-                    renderInput={(params) =>
-                        <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
-                    options={allNames}
-                    //style={{color: colors.greenAccent[400], fontSize: 16}}
-                    selectOnFocus={false}
-                    autoHighlight
-                    autoComplete
-                    blurOnSelect
-                    onChange={(_, value, __) => changeGolfer(value)}
-                    sx={{
-                        width: 250
-                    }}
-                >
-                </Autocomplete>
-            </Box>
-
-            {golfer !== '' && (
-                <Box
-                    mt='50px'
-                    justifyContent='center'
-                    alignItems='center'
-                    display='flex'
-                    flexWrap='wrap'
-                >
-
-                    <AppSelect
-                        label="Start Week"
-                        placeholder='startWeek'
-                        name='startWeek'
-                        onChange={changeHandler}
-                        value={startWeek}
-                        valuesFunc={
-                            allWeeks.map((week, i) => {
-                                if (parseInt(week) <= parseInt(endWeek)) {
-                                    return <MenuItem key={i} value={week}>{week}</MenuItem>
-                                }
-                            })
-                        }
-                    />
-                    <AppSelect
-                        label="End Week"
-                        placeholder='endWeek'
-                        name='endWeek'
-                        onChange={changeHandler}
-                        value={endWeek}
-                        valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
-                            if (parseInt(week) >= parseInt(startWeek)) {
-                                return <MenuItem key={i} value={week}>{week}</MenuItem>
-                            }
-                        })}
-                    />
-                    <AppSelect
-                        label="Start Year"
-                        placeholder='startYear'
-                        name='startYear'
-                        onChange={changeHandler}
-                        value={startYear}
-                        valuesFunc={allYears.map((year, i) => {
-                            if (parseInt(year) <= parseInt(endYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
-                        })}
-                    />
-                    <AppSelect
-                        label="End Year"
-                        placeholder='endYear'
-                        name='endYear'
-                        onChange={changeHandler}
-                        value={endYear}
-                        valuesFunc={allYears.map((year, i) => {
-                            if (parseInt(year) >= parseInt(startYear)) {
-                                return <MenuItem key={i} value={year}>{year}</MenuItem>
-                            }
-                        })}
-                    />
-                </Box>
-            )}
-
-            {golfer !== '' && (
-                <Box
-                    mt='15px'
-                    //justifyContent='end'
-                    alignItems='center'
-                    display='flex'
-                    flexDirection={isMobile ? 'column' : 'row'}
-                    padding='10px 0'
-                    ml={isMobile ? '0' : '20px'}
-                >
-
-                    <Box width={isMobile ? '100%' : 'auto'}>
-                        <div ref={action} />
-                    </Box>
-
+            {loading ? (
+                <LoadingScreen />
+            ) : (
+                <>
                     <Box
+                        mt='20px'
+                        alignItems='center'
+                        justifyContent='center'
                         display='flex'
-                        flexDirection={isMobile ? 'row' : 'column'}
-                        justifyContent='space-evenly'
-                        mb='25px'
-                        width={isMobile ? '100%' : 'auto'}
-                        flexWrap={isMobile ? 'wrap' : 'nowrap'}
                     >
-                        <StatBox
-                            title='Avg Score'
-                            subtitle={`${avgScore.toFixed(1)}`}
-                        />
-                        <StatBox
-                            title='Handicap'
-                            subtitle={`${handicap.toFixed(1)}`}
-                        />
-                        <StatBox
-                            title='Trend'
-                            subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
-                            statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
-                        />
-                        <StatBox
-                            title='Best Score'
-                            subtitle={`${bestScore}`}
+                        <Autocomplete
+                            renderInput={(params) =>
+                                <TextField {...params} sx={{ input: { textAlign: 'center' } }} />}
+                            options={allNames}
+                            selectOnFocus={false}
+                            autoHighlight
+                            autoComplete
+                            blurOnSelect
+                            onChange={(_, value) => changeGolfer(value)}
+                            sx={{
+                                width: 250
+                            }}
                         />
                     </Box>
-                </Box>
+
+                    {golfer !== '' && (
+                        <Box
+                            mt='50px'
+                            justifyContent='center'
+                            alignItems='center'
+                            display='flex'
+                            flexWrap='wrap'
+                        >
+
+                            <AppSelect
+                                label="Start Week"
+                                placeholder='startWeek'
+                                name='startWeek'
+                                onChange={changeHandler}
+                                value={startWeek}
+                                valuesFunc={
+                                    allWeeks.map((week, i) => {
+                                        if (parseInt(week) <= parseInt(endWeek)) {
+                                            return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                        }
+                                        return null;
+                                    })
+                                }
+                            />
+                            <AppSelect
+                                label="End Week"
+                                placeholder='endWeek'
+                                name='endWeek'
+                                onChange={changeHandler}
+                                value={endWeek}
+                                valuesFunc={allWeeks.slice().sort((a, b) => parseInt(b) - parseInt(a)).map((week, i) => {
+                                    if (parseInt(week) >= parseInt(startWeek)) {
+                                        return <MenuItem key={i} value={week}>{week}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                            <AppSelect
+                                label="Start Year"
+                                placeholder='startYear'
+                                name='startYear'
+                                onChange={changeHandler}
+                                value={startYear}
+                                valuesFunc={allYears.map((year, i) => {
+                                    if (parseInt(year) <= parseInt(endYear)) {
+                                        return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                            <AppSelect
+                                label="End Year"
+                                placeholder='endYear'
+                                name='endYear'
+                                onChange={changeHandler}
+                                value={endYear}
+                                valuesFunc={allYears.map((year, i) => {
+                                    if (parseInt(year) >= parseInt(startYear)) {
+                                        return <MenuItem key={i} value={year}>{year}</MenuItem>
+                                    }
+                                    return null;
+                                })}
+                            />
+                        </Box>
+                    )}
+
+                    {golfer !== '' && (
+                        <Box
+                            mt='15px'
+                            alignItems='center'
+                            display='flex'
+                            flexDirection='column'
+                            padding='10px 0'
+                            width='100%'
+                        >
+                            <Box width='100%' display='flex' justifyContent='center'>
+                                <div ref={action} />
+                            </Box>
+
+                            <Box
+                                display='flex'
+                                flexDirection='row'
+                                justifyContent='space-evenly'
+                                mt='30px'
+                                width='100%'
+                                flexWrap='wrap'
+                                gap='20px'
+                            >
+                                <StatBox
+                                    title='Avg Score'
+                                    subtitle={`${avgScore.toFixed(1)}`}
+                                />
+                                <StatBox
+                                    title='Handicap'
+                                    subtitle={`${handicap.toFixed(1)}`}
+                                />
+                                <StatBox
+                                    title='Trend'
+                                    subtitle={((trend > 0.0) ? "+" : "").concat(`${trend.toFixed(2)}`)}
+                                    statColor={(trend < 0.0) ? colors.greenAccent[400] : colors.red[400]}
+                                />
+                                <StatBox
+                                    title='Best Score'
+                                    subtitle={`${bestScore}`}
+                                />
+                            </Box>
+                        </Box>
+                    )}
+
+                    {golfer !== '' && hcapDetails && (
+                        <Box
+                            mt='50px'
+                            p={isMobile ? '20px' : '40px'}
+                            mb='40px'
+                            sx={{
+                                bgcolor: colors.primary[400],
+                                borderRadius: '12px',
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <Typography variant='h3' fontWeight='bold' mb='30px' color={colors.greenAccent[400]}>
+                                Handicap Verification
+                            </Typography>
+
+                            {hcapDetails.notEnough ? (
+                                <Box p='20px' sx={{ border: 1, borderColor: colors.red[400], borderRadius: '8px' }}>
+                                    <Typography variant='h5' color={colors.red[500]} fontWeight='bold'>
+                                        INSUFFICIENT DATA
+                                    </Typography>
+                                    <Typography variant='body1' mt='10px'>
+                                        A minimum of 3 scores is required to calculate a handicap. Currently recorded: {hcapDetails.totalScores || 0}
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                <>
+                                    <Typography variant='h5' mb='15px' color={colors.grey[200]}>
+                                        Recent Score History (Last {hcapDetails.totalInWindow})
+                                    </Typography>
+                                    <Box display='flex' flexWrap='wrap' justifyContent='center' gap='10px' mb='40px'>
+                                        {hcapDetails.scores.map((s, i) => (
+                                            <Box
+                                                key={i}
+                                                p='12px'
+                                                sx={{
+                                                    border: 2,
+                                                    borderColor: s.isBest ? colors.greenAccent[400] : 'transparent',
+                                                    bgcolor: s.isBest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                                    borderRadius: '8px',
+                                                    minWidth: '70px',
+                                                    textAlign: 'center',
+                                                    transition: 'transform 0.2s',
+                                                    '&:hover': { transform: 'scale(1.05)' }
+                                                }}
+                                            >
+                                                <Typography variant='h6' fontWeight={s.isBest ? 'bold' : 'normal'} color={s.isBest ? colors.greenAccent[400] : colors.grey[100]}>
+                                                    {s.score}
+                                                </Typography>
+                                                <Typography variant='caption' sx={{ display: 'block', mt: '4px', opacity: 0.7 }}>
+                                                    Wk {s.date.split(' ')[2]}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+
+                                    <Box
+                                        p='25px'
+                                        sx={{
+                                            bgcolor: 'rgba(0,0,0,0.2)',
+                                            borderRadius: '12px',
+                                            width: isMobile ? '100%' : 'fit-content',
+                                            border: '1px dashed',
+                                            borderColor: colors.grey[600]
+                                        }}
+                                    >
+                                        <Typography variant='h5' mb='20px' fontWeight='bold' sx={{ letterSpacing: '1px' }}>
+                                            Handicap Formula
+                                        </Typography>
+
+                                        <Box sx={{ fontFamily: '"Roboto Mono", monospace', fontSize: isMobile ? '0.9rem' : '1.1rem' }}>
+                                            <Typography sx={{ mb: '10px', color: colors.grey[300] }}>
+                                                <i>Handicap = slope_ute × (mean(best_{hcapDetails.nRoundsUsed}) - rating)</i>
+                                            </Typography>
+
+                                            <Box display='flex' alignItems='center' justifyContent='center' flexWrap='wrap' gap='8px'>
+                                                <Typography variant='h4' color={colors.greenAccent[500]} fontWeight='bold'>
+                                                    {hcapDetails.handicap.toFixed(1)}
+                                                </Typography>
+                                                <Typography variant='h4'>=</Typography>
+                                                <Typography variant='h5' color={colors.grey[100]}>
+                                                    {hcapDetails.slopeUteCreek.toFixed(3)}
+                                                </Typography>
+                                                <Typography variant='h4'>×</Typography>
+                                                <Box sx={{ borderBottom: 1, borderColor: colors.grey[100], display: 'inline-block', px: 1 }}>
+                                                    <Typography variant='h5' component='span'>({hcapDetails.meanBest.toFixed(2)} - {hcapDetails.rating.toFixed(2)})</Typography>
+                                                </Box>
+                                            </Box>
+                                        </Box>
+                                    </Box>
+
+                                    <Box mt='25px' display='flex' alignItems='center' gap='10px'>
+                                        <Box sx={{ width: 12, height: 12, bgcolor: 'rgba(76, 175, 80, 0.4)', border: 1, borderColor: colors.greenAccent[400], borderRadius: '2px' }} />
+                                        <Typography variant='caption' color={colors.grey[400]}>Indicates score used in best {hcapDetails.nRoundsUsed} calculation</Typography>
+                                    </Box>
+                                </>
+                            )}
+                        </Box>
+                    )}
+                </>
             )}
         </Box>
-    )
+    );
 };
 
 export default Individual;
