@@ -114,8 +114,10 @@ const League = () => {
             ]
         });
 
-        if (action.current) action.current.innerHTML = '';
-        action.current.append(plot);
+        if (action.current) {
+            action.current.innerHTML = '';
+            action.current.append(plot);
+        }
 
         // Recalculate summary
         let aWinner = { name: '?', net: Infinity };
@@ -150,7 +152,7 @@ const League = () => {
                     'Gross Score': obj.gross,
                     'Net Score': obj.net.toFixed(2),
                     'Handicap': obj.handicap.toFixed(1),
-                    'id': nameKey,
+                    'id': `${flight}-${nameKey}`,
                 });
             }
         }
@@ -178,9 +180,13 @@ const League = () => {
             width: 100,
             renderCell: (params) => (
                 <IconButton
-                    onClick={() => handleToggleExclusion(params.row.Names)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleExclusion(params.row.Names);
+                    }}
                     color={isExcludedTable ? "success" : "error"}
-                    size="small"
+                    size="medium"
+                    sx={{ p: 1 }}
                 >
                     {isExcludedTable ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon />}
                 </IconButton>
@@ -278,7 +284,7 @@ const League = () => {
                         width='100%'
                     >
                         <Box width='100%' display='flex' justifyContent='center'>
-                            <div ref={action} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
+                            <div ref={action} style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: '400px' }} />
                         </Box>
 
                         <Box
@@ -306,6 +312,7 @@ const League = () => {
                                 </Typography>
                                 <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
                                     <DataGrid
+                                        id="a-flight-grid"
                                         columns={columns()}
                                         rows={rows('A')}
                                         hideFooter={true}
@@ -343,6 +350,7 @@ const League = () => {
                                 </Typography>
                                 <Box width='100%' sx={{ minWidth: 0, overflow: 'auto' }}>
                                     <DataGrid
+                                        id="b-flight-grid"
                                         columns={columns(false)}
                                         rows={rows('B')}
                                         hideFooter={true}
@@ -381,6 +389,7 @@ const League = () => {
                             </Typography>
                             <Box width={isMobile ? '100%' : '80%'} sx={{ minWidth: 0, overflow: 'auto' }}>
                                 <DataGrid
+                                    id="excluded-flight-grid"
                                     columns={columns(true)}
                                     rows={rows('Excluded')}
                                     hideFooter={true}
