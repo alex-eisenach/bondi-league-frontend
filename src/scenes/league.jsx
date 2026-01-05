@@ -28,6 +28,8 @@ const League = () => {
     const [bWinner, setBWinner] = useState('?');
     const [meanScore, setMeanScore] = useState('?');
     const [lowNet, setLowNet] = useState('?');
+    const [hottest, setHottest] = useState('?');
+    const [coldest, setColdest] = useState('?');
     const [excludedGolfers, setExcludedGolfers] = useState(new Set());
     const [rawStats, setRawStats] = useState(null);
 
@@ -137,11 +139,20 @@ const League = () => {
         let totalGross = 0;
         let lowNet = { name: '?', net: Infinity };
 
+        let hottest = { name: '?', val: Infinity };
+        let coldest = { name: '?', val: -Infinity };
+
         leagueParticipants.forEach(g => {
             totalGross += g.gross;
             if (newFlightMap[g.name].flight === 'A' && g.net < aWinner.net) aWinner = { name: g.name, net: g.net };
             if (newFlightMap[g.name].flight === 'B' && g.net < bWinner.net) bWinner = { name: g.name, net: g.net };
             if (g.net < lowNet.net) lowNet = { name: g.name, net: g.net };
+
+            if (g.handicapRounds > 2) {
+                const heatVal = g.ytdMean - (36 + g.handicap);
+                if (heatVal < hottest.val) hottest = { name: g.name, val: heatVal };
+                if (heatVal > coldest.val) coldest = { name: g.name, val: heatVal };
+            }
         });
 
         setFlightMap(fd);
@@ -149,6 +160,8 @@ const League = () => {
         setBWinner(bWinner.name);
         setMeanScore(leagueParticipants.length > 0 ? (totalGross / leagueParticipants.length).toFixed(1) : '?');
         setLowNet(lowNet.name !== '?' ? `${lowNet.name} (${lowNet.net.toFixed(2)})` : '?');
+        setHottest(hottest.name !== '?' ? `${hottest.name} (${hottest.val.toFixed(2)})` : '?');
+        setColdest(coldest.name !== '?' ? `${coldest.name} (${coldest.val.toFixed(2)})` : '?');
 
         return () => plot.remove();
     }, [rawStats, excludedGolfers, colors.greenAccent, isMobile]);
@@ -282,10 +295,12 @@ const League = () => {
                         flexWrap='wrap'
                         gap='20px'
                     >
-                        <StatBox title='Avg Score' subtitle={meanScore} />
-                        <StatBox title='A Flight Winner' subtitle={aWinner} statColor={colors.greenAccent[400]} />
-                        <StatBox title='B Flight Winner' subtitle={bWinner} statColor={colors.primary[100]} />
-                        <StatBox title='Low Net' subtitle={lowNet} />
+                        <StatBox title='📊 Avg Score' subtitle={meanScore} statColor={colors.grey[500]} />
+                        <StatBox title='🏆 A Flight Winner' subtitle={aWinner} statColor={colors.greenAccent[400]} />
+                        <StatBox title='🥈 B Flight Winner' subtitle={bWinner} statColor={colors.primary[100]} />
+                        <StatBox title='📉 Low Net' subtitle={lowNet} statColor={colors.grey[500]} />
+                        <StatBox title='🔥 Hottest' subtitle={hottest} statColor={colors.grey[500]} />
+                        <StatBox title='❄️ Coldest' subtitle={coldest} statColor={colors.grey[500]} />
                     </Box>
 
                     <Box
